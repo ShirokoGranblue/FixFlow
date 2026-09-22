@@ -17,5 +17,11 @@ public interface TicketService {
 
     List<TicketVO> getOpenTickets();
 
-    TicketVO handleTickets(String id);
+    TicketVO handleTicket(String id);
+
+    List<TicketVO> getAssignedTickets();
+
+    TicketVO resolveTicket(String id);
+
+    TicketVO closeTicket(String id);
 }

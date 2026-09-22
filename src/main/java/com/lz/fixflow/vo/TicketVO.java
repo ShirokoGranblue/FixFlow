@@ -16,4 +16,6 @@ public class TicketVO {
     private String creatorId;
     private String assigneeId;
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+    private LocalDateTime resolvedAt;
 }

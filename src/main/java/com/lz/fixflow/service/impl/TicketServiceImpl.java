@@ -71,16 +71,22 @@ public class TicketServiceImpl implements TicketService {
         ticket.setCreatorId(userid);
 
         ticketMapper.insert(ticket);
+
         return convertToVO(ticket);
     }
 
     @Override
     public List<TicketVO> showTickets() {
-        String id = StpUtil.getLoginIdAsString();
+        String userid = StpUtil.getLoginIdAsString();
         List<Ticket> list = ticketMapper.selectList(new LambdaQueryWrapper<Ticket>()
-                .eq(Ticket::getCreatorId,id)
+                .eq(Ticket::getCreatorId,userid)
                 .orderByDesc(Ticket::getCreatedAt)
         );
+
+        if(list==null|| list.isEmpty()){
+            throw new BusinessException("当前无工单");
+        }
+
         return list.stream()
                 .map(this::convertToVO)
                 .toList();
@@ -88,8 +94,8 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     public TicketVO showTicket(String id) {
-        Ticket ticket = ticketMapper.selectById(id);
         String userid = StpUtil.getLoginIdAsString();
+        Ticket ticket = ticketMapper.selectById(id);
 
         if(ticket == null){
             throw new BusinessException("工单不存在");
@@ -113,13 +119,16 @@ public class TicketServiceImpl implements TicketService {
                 .orderByAsc(Ticket::getCreatedAt)
         );
 
+        if (list==null|| list.isEmpty()){
+            throw new BusinessException("当前无待处理工单");
+        }
+
         return list.stream()
                 .map(this::convertToVO)
                 .toList();
     }
 
-    @Override
-    public TicketVO handleTickets(String id) {
+    public TicketVO handleTicket(String id) {
         String userid = StpUtil.getLoginIdAsString();
         checkStaffPermission(userid);
 
@@ -133,7 +142,52 @@ public class TicketServiceImpl implements TicketService {
                 );
 
         if(row==0){
-            throw new BusinessException("工单不存在或已经被处理");
+            throw new BusinessException("工单不存在或已被处理");
+        }
+
+        Ticket ticket = ticketMapper.selectById(id);
+
+        return convertToVO(ticket);
+    }
+
+    @Override
+    public List<TicketVO> getAssignedTickets() {
+        String userid = StpUtil.getLoginIdAsString();
+        checkStaffPermission(userid);
+
+        List<Ticket> list = ticketMapper.selectList(
+                new LambdaQueryWrapper<Ticket>()
+                        .eq(Ticket::getAssigneeId,userid)
+                        .eq(Ticket::getStatus,"IN_PROGRESS")
+                        .orderByDesc(Ticket::getUpdatedAt)
+        );
+
+        if (list==null|| list.isEmpty()){
+            throw new BusinessException("当前无处理中的工单");
+        }
+
+        return list.stream()
+                .map(this::convertToVO)
+                .toList();
+    }
+
+    @Override
+    public TicketVO resolveTicket(String id) {
+        String userid = StpUtil.getLoginIdAsString();
+        checkStaffPermission(userid);
+
+        int row = ticketMapper.update(null,
+                new LambdaUpdateWrapper<Ticket>()
+                        .eq(Ticket::getId,id)
+                        .eq(Ticket::getStatus,"IN_PROGRESS")
+                        .eq(Ticket::getAssigneeId,userid)
+                        .set(Ticket::getStatus,"RESOLVED")
+                        .set(Ticket::getUpdatedAt,LocalDateTime.now())
+                        .set(Ticket::getResolvedAt,LocalDateTime.now())
+                );
+
+        if(row == 0){
+            throw new BusinessException("工单不存在或已被处理");
         }
 
         Ticket ticket = ticketMapper.selectById(id);

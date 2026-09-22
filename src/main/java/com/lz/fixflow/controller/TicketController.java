@@ -32,13 +32,23 @@ public class TicketController {
         return Result.success(ticketService.showTicket(id));
     }
 
-    @PostMapping("/{id}/handle")
-    public Result<TicketVO> handleTickets(@PathVariable String id) {
-        return Result.success(ticketService.handleTickets(id));
-    }
-
     @GetMapping("/open")
     public Result<List<TicketVO>> openTickets() {
         return Result.success(ticketService.getOpenTickets());
+    }
+
+    @PostMapping("/{id}/handle")
+    public Result<TicketVO> handleTicket(@PathVariable String id) {
+        return Result.success(ticketService.handleTicket(id));
+    }
+
+    @GetMapping("/assign")
+    public Result<List<TicketVO>> assignTickets() {
+        return Result.success(ticketService.getAssignedTickets());
+    }
+
+    @PostMapping("/{id}/resolve")
+    public Result<TicketVO> resolveTicket(@PathVariable String id) {
+        return Result.success(ticketService.resolveTicket(id));
     }
 }
