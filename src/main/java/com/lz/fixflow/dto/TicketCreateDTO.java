@@ -1,6 +1,7 @@
 package com.lz.fixflow.dto;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
@@ -18,4 +19,7 @@ public class TicketCreateDTO {
 
     @Pattern(regexp = "LOW|MEDIUM|HIGH|URGENT",message = "优先级不存在")
     private String priority;
+
+    @NotNull(message = "请选择分类")
+    private Long categoryId;
 }

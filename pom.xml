@@ -87,6 +87,11 @@
             <artifactId>sa-token-spring-boot4-starter</artifactId>
             <version>1.46.0</version>
         </dependency>
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-jsqlparser</artifactId>
+            <version>3.5.17</version>
+        </dependency>
     </dependencies>
 
     <build>

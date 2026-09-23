@@ -12,7 +12,7 @@ import java.util.UUID;
 @TableName("user")
 public class User {
 
-    @TableId(type= IdType.AUTO)
+    @TableId
     private String id;
     private String username;
     private String email;

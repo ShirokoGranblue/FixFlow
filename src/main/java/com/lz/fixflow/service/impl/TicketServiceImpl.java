@@ -3,16 +3,25 @@ package com.lz.fixflow.service.impl;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lz.fixflow.common.BusinessException;
+import com.lz.fixflow.common.PageResult;
 import com.lz.fixflow.dto.TicketCreateDTO;
+import com.lz.fixflow.dto.TicketQueryDTO;
+import com.lz.fixflow.entity.Category;
 import com.lz.fixflow.entity.Ticket;
+import com.lz.fixflow.entity.TicketHistory;
 import com.lz.fixflow.entity.User;
+import com.lz.fixflow.mapper.CategoryMapper;
+import com.lz.fixflow.mapper.TicketHistoryMapper;
 import com.lz.fixflow.mapper.TicketMapper;
 import com.lz.fixflow.mapper.UserMapper;
 import com.lz.fixflow.service.TicketService;
+import com.lz.fixflow.vo.TicketHistoryVO;
 import com.lz.fixflow.vo.TicketVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -25,23 +34,35 @@ public class TicketServiceImpl implements TicketService {
 
     private final TicketMapper ticketMapper;
     private final UserMapper userMapper;
+    private final TicketHistoryMapper ticketHistoryMapper;
+    private final CategoryMapper categoryMapper;
 
-    private TicketVO convertToVO(Ticket ticket) {
+    private TicketVO convertToVO(Ticket entity) {
+
         TicketVO vo = new TicketVO();
+        Category category = categoryMapper.selectById(entity.getCategoryId());
+
+        vo.setCategoryId(entity.getCategoryId());
+
+        if(category != null) {
+            vo.setCategoryName(category.getName());
+        }
 
         vo.setId(UUID.randomUUID().toString());
-        vo.setTitle(ticket.getTitle());
-        vo.setDescription(ticket.getDescription());
-        vo.setPriority(ticket.getPriority());
-        vo.setStatus(ticket.getStatus());
-        vo.setCreatorId(ticket.getCreatorId());
-        vo.setCreatedAt(ticket.getCreatedAt());
-        vo.setAssigneeId(ticket.getAssigneeId());
+        vo.setTitle(entity.getTitle());
+        vo.setDescription(entity.getDescription());
+        vo.setPriority(entity.getPriority());
+        vo.setStatus(entity.getStatus());
+        vo.setCreatorId(entity.getCreatorId());
+        vo.setCreatedAt(entity.getCreatedAt());
+        vo.setUpdatedAt(entity.getUpdatedAt());
+        vo.setResolvedAt(entity.getResolvedAt());
+        vo.setAssigneeId(entity.getAssigneeId());
 
         return vo;
     }
 
-    private void checkStaffPermission(String id){
+    private void checkAccessPermission(String id){
 
         User user = userMapper.selectById(id);
 
@@ -55,10 +76,57 @@ public class TicketServiceImpl implements TicketService {
         }
     }
 
+    private TicketHistoryVO convertHistoryToVO(TicketHistory ticketHistory){
+        TicketHistoryVO vo = new TicketHistoryVO();
+
+        if(ticketHistory==null){
+            throw new BusinessException("内部错误");
+        }
+
+        vo.setId(ticketHistory.getId());
+        vo.setCreatedAt(ticketHistory.getCreatedAt());
+        vo.setAction(ticketHistory.getAction());
+        vo.setFromStatus(ticketHistory.getFromStatus());
+        vo.setToStatus(ticketHistory.getToStatus());
+        vo.setOperatorid(ticketHistory.getOperatorId());
+
+        return vo;
+    }
+
+    private void recordHistory(
+            String ticketid,
+            String operatorid,
+            String action,
+            String fromStatus,
+            String toStatus
+    ) {
+
+        TicketHistory ticketHistory = new TicketHistory();
+
+        ticketHistory.setId(UUID.randomUUID().toString());
+        ticketHistory.setTicketId(ticketid);
+        ticketHistory.setOperatorId(operatorid);
+        ticketHistory.setAction(action);
+        ticketHistory.setFromStatus(fromStatus);
+        ticketHistory.setToStatus(toStatus);
+        ticketHistory.setCreatedAt(LocalDateTime.now());
+
+        ticketHistoryMapper.insert(ticketHistory);
+    }
+
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public TicketVO createTicket(TicketCreateDTO dto){
         String userid = StpUtil.getLoginIdAsString();
         Ticket ticket = new Ticket();
+
+        Category category = categoryMapper.selectById(dto.getCategoryId());
+
+        if (category == null) {
+            throw new BusinessException("工单分类不存在");
+        }
+
+        ticket.setCategoryId(dto.getCategoryId());
 
         ticket.setId(UUID.randomUUID().toString());
         ticket.setTitle(dto.getTitle());
@@ -71,6 +139,8 @@ public class TicketServiceImpl implements TicketService {
         ticket.setCreatorId(userid);
 
         ticketMapper.insert(ticket);
+
+        recordHistory(ticket.getId(),userid,"CREATE","NULL","OPEN");
 
         return convertToVO(ticket);
     }
@@ -111,7 +181,7 @@ public class TicketServiceImpl implements TicketService {
     @Override
     public List<TicketVO> getOpenTickets() {
         String userid = StpUtil.getLoginIdAsString();
-        checkStaffPermission(userid);
+        checkAccessPermission(userid);
         List<Ticket> list = ticketMapper.selectList(new LambdaQueryWrapper<Ticket>()
                 .eq(Ticket::getCreatorId,userid)
                 .eq(Ticket::getStatus,"OPEN")
@@ -128,9 +198,11 @@ public class TicketServiceImpl implements TicketService {
                 .toList();
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
     public TicketVO handleTicket(String id) {
         String userid = StpUtil.getLoginIdAsString();
-        checkStaffPermission(userid);
+        checkAccessPermission(userid);
 
         int row = ticketMapper.update(null,
                 new LambdaUpdateWrapper<Ticket>()
@@ -147,13 +219,15 @@ public class TicketServiceImpl implements TicketService {
 
         Ticket ticket = ticketMapper.selectById(id);
 
+        recordHistory(id,userid,"HANDLE","OPEN","IN_PROGRESS");
+
         return convertToVO(ticket);
     }
 
     @Override
     public List<TicketVO> getAssignedTickets() {
         String userid = StpUtil.getLoginIdAsString();
-        checkStaffPermission(userid);
+        checkAccessPermission(userid);
 
         List<Ticket> list = ticketMapper.selectList(
                 new LambdaQueryWrapper<Ticket>()
@@ -172,9 +246,10 @@ public class TicketServiceImpl implements TicketService {
     }
 
     @Override
+    @Transactional (rollbackFor = Exception.class)
     public TicketVO resolveTicket(String id) {
         String userid = StpUtil.getLoginIdAsString();
-        checkStaffPermission(userid);
+        checkAccessPermission(userid);
 
         int row = ticketMapper.update(null,
                 new LambdaUpdateWrapper<Ticket>()
@@ -192,6 +267,124 @@ public class TicketServiceImpl implements TicketService {
 
         Ticket ticket = ticketMapper.selectById(id);
 
+        recordHistory(id,userid,"RESOLVE","IN_PROGRESS","RESOLVED");
+
         return convertToVO(ticket);
+    }
+
+    @Override
+    public TicketVO closeTicket(String id) {
+        String userid = StpUtil.getLoginIdAsString();
+        checkAccessPermission(userid);
+
+        int row=ticketMapper.update(null,
+                new LambdaUpdateWrapper<Ticket>()
+                        .eq(Ticket::getId,id)
+                        .eq(Ticket::getStatus,"RESOLVED")
+                        .eq(Ticket::getAssigneeId,userid)
+                        .set(Ticket::getStatus,"CLOSED")
+                        .set(Ticket::getUpdatedAt,LocalDateTime.now())
+        );
+        if(row == 0){
+            throw  new BusinessException("工单不存在、不是你创建的工单或当前状态无法关闭");
+        }
+
+        Ticket ticket = ticketMapper.selectById(id);
+
+        recordHistory(id,userid,"CLOSE","RESOLVED","CLOSED");
+
+        return convertToVO(ticket);
+    }
+
+    @Override
+    public List<TicketHistoryVO> getTicketHistory(String id){
+        String userid = StpUtil.getLoginIdAsString();
+        checkAccessPermission(userid);
+
+        List<TicketHistory> list = ticketHistoryMapper.selectList(
+                new LambdaQueryWrapper<TicketHistory>()
+                        .eq(TicketHistory::getTicketId,id)
+                        .orderByDesc(TicketHistory::getCreatedAt)
+        );
+
+        return list.stream()
+                .map(this::convertHistoryToVO)
+                .toList();
+    }
+
+    @Override
+    public PageResult<TicketVO> searchTickets(TicketQueryDTO dto) {
+        String userid = StpUtil.getLoginIdAsString();
+        checkAccessPermission(userid);
+
+        long pageSize = Math.min(dto.getPageSize(),100);
+        Page<Ticket> page = new Page<>(dto.getCurrent(),pageSize);
+        LambdaQueryWrapper<Ticket> wrapper = new LambdaQueryWrapper<>();
+
+        if(dto.getKeyword()!=null && !dto.getKeyword().isBlank()){
+
+            wrapper.like(Ticket::getTitle,dto.getKeyword());
+        }
+
+        if(dto.getStatus()!=null && !dto.getStatus().isBlank()){
+
+            wrapper.eq(Ticket::getStatus,dto.getStatus());
+        }
+
+        if (dto.getPriority()!=null && !dto.getPriority().isBlank()){
+
+            wrapper.eq(Ticket::getPriority,dto.getPriority());
+        }
+
+        if(dto.getCategoryId()!=null){
+
+            wrapper.eq(Ticket::getCategoryId,dto.getCategoryId());
+        }
+
+        if("create_asc".equals(dto.getSort())){
+            wrapper.orderByDesc(Ticket::getCreatedAt);
+        }
+        if("create_desc".equals(dto.getSort())){
+            wrapper.orderByDesc(Ticket::getCreatedAt);
+        }
+        else{
+            wrapper.orderByDesc(Ticket::getCreatedAt);
+        }
+
+        if ("priority_asc".equals(dto.getSort())) {
+            wrapper.last("""
+                    ORDER BY CASE TICKET.priority
+                        WHEN 'URGENT' THEN 4
+                        WHEN 'HIGH' THEN 3
+                        WHEN 'MEDIUM' THEN 2
+                        WHEN 'LOW' THEN 1
+                    END ASC
+                    """);
+        }
+        if ("priority_desc".equals(dto.getSort())) {
+            wrapper.last("""
+                    ORDER BY CASE TICKET.priority
+                        WHEN 'URGENT' THEN 4
+                        WHEN 'HIGH' THEN 3
+                        WHEN 'MEDIUM' THEN 2
+                        WHEN 'LOW' THEN 1
+                    END DESC
+            """);
+        }
+
+        Page<Ticket> result = ticketMapper.selectPage(page, wrapper);
+
+        List<TicketVO> list =
+                result.getRecords()
+                .stream()
+                .map(this::convertToVO)
+                .toList();
+
+        return new PageResult<>(
+                list,
+                result.getTotal(),
+                result.getCurrent(),
+                result.getSize(),
+                result.getPages());
     }
 }

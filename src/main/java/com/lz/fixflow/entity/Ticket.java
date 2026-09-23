@@ -12,17 +12,26 @@ import java.util.UUID;
 @Data
 public class Ticket {
 
-    @TableId(type = IdType.AUTO)
+    @TableId
     private String id;
 
     private String title;
-    private String description;
-    private String priority;
-    private String status;
-    private String creatorId;
-    private String assigneeId;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-    private LocalDateTime resolvedAt;
 
+    private String description;
+
+    private String priority;
+
+    private String status;
+
+    private String creatorId;
+
+    private Long categoryId;
+
+    private String assigneeId;
+
+    private LocalDateTime createdAt;
+
+    private LocalDateTime updatedAt;
+
+    private LocalDateTime resolvedAt;
 }

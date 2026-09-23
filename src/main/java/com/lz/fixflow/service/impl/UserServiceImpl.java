@@ -24,14 +24,18 @@ public class UserServiceImpl implements UserService {
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
 
-    private UserVO convertToVO(User user) {
-
+    private UserVO convertToVO(User entity) {
         UserVO vo = new UserVO();
+
+        if (entity == null) {
+            throw new RuntimeException("");
+        }
+
         vo.setId(UUID.randomUUID().toString());
-        vo.setUsername(user.getUsername());
-        vo.setRole(user.getRole());
-        vo.setEmail(user.getEmail());
-        vo.setCreatedAt(user.getCreatedAt());
+        vo.setUsername(entity.getUsername());
+        vo.setRole(entity.getRole());
+        vo.setEmail(entity.getEmail());
+        vo.setCreatedAt(entity.getCreatedAt());
 
         return vo;
     }
