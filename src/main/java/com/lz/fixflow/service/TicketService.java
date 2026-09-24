@@ -15,6 +15,8 @@ public interface TicketService {
 
     TicketVO createTicket(TicketCreateDTO dto);
 
+    TicketVO cancelTicket(String id);
+
     List<TicketVO> showTickets();
 
     TicketVO showTicket(String id);

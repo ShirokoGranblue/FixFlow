@@ -91,4 +91,9 @@ public class TicketController {
                                           @Valid @RequestBody TicketAssignDTO dto) {
         return Result.success(ticketService.assignTicket(id,dto));
     }
+
+    @PostMapping("/{id}/cancel")
+    public Result<TicketVO> cancelTickets(@PathVariable String id) {
+        return Result.success(ticketService.cancelTicket(id));
+    }
 }
