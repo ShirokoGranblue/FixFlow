@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lz.fixflow.common.BusinessException;
 import com.lz.fixflow.common.PageResult;
+import com.lz.fixflow.dto.TicketAssignDTO;
 import com.lz.fixflow.dto.TicketCreateDTO;
 import com.lz.fixflow.dto.TicketQueryDTO;
 import com.lz.fixflow.entity.Category;
@@ -342,7 +343,7 @@ public class TicketServiceImpl implements TicketService {
         }
 
         if("create_asc".equals(dto.getSort())){
-            wrapper.orderByDesc(Ticket::getCreatedAt);
+            wrapper.orderByAsc(Ticket::getCreatedAt);
         }
         if("create_desc".equals(dto.getSort())){
             wrapper.orderByDesc(Ticket::getCreatedAt);
@@ -386,5 +387,54 @@ public class TicketServiceImpl implements TicketService {
                 result.getCurrent(),
                 result.getSize(),
                 result.getPages());
+    }
+
+    @Override
+    @Transactional
+    public TicketVO assignTicket(String id, TicketAssignDTO dto){
+
+        String userid = StpUtil.getLoginIdAsString();
+
+        User admin = userMapper.selectById(userid);
+        User assignee = userMapper.selectById(dto.getAssignId());
+
+        if (admin==null){
+            throw new BusinessException("管理员用户不存在");
+        }
+        if (assignee==null){
+            throw new BusinessException("分配人员不存在");
+        }
+
+        if (!admin.getRole().equals("ADMIN")){
+            throw new BusinessException("无权访问");
+        }
+        if (!assignee.getRole().equals("assignee")){
+            throw new BusinessException("只分配给处理人员");
+        }
+
+        int row = ticketMapper.update(null,
+                new LambdaUpdateWrapper<Ticket>()
+                        .eq(Ticket::getStatus,"OPEN")
+                        .eq(Ticket::getId,id)
+                        .isNull(Ticket::getAssigneeId)
+                        .set(Ticket::getStatus,"IN_PROGRESS")
+                        .set(Ticket::getAssigneeId,dto.getAssignId())
+                        .set(Ticket::getUpdatedAt,LocalDateTime.now())
+        );
+        if (row == 0){
+            throw new BusinessException("工单不存在或已被处理");
+        }
+
+        recordHistory(
+                id,
+                userid,
+                "ASSIGN",
+                "OPEN",
+                "IN_PROGRESS"
+        );
+
+        Ticket ticket = ticketMapper.selectById(id);
+
+        return convertToVO(ticket);
     }
 }

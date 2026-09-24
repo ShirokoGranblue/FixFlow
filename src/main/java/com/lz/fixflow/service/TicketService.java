@@ -1,6 +1,7 @@
 package com.lz.fixflow.service;
 
 import com.lz.fixflow.common.PageResult;
+import com.lz.fixflow.dto.TicketAssignDTO;
 import com.lz.fixflow.dto.TicketCreateDTO;
 import com.lz.fixflow.dto.TicketQueryDTO;
 import com.lz.fixflow.vo.TicketHistoryVO;
@@ -31,4 +32,6 @@ public interface TicketService {
     List<TicketHistoryVO> getTicketHistory(String id);
 
     PageResult<TicketVO> searchTickets(TicketQueryDTO dto);
+
+    TicketVO assignTicket(String id ,TicketAssignDTO dto);
 }

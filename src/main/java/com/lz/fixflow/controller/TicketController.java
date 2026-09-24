@@ -2,6 +2,7 @@ package com.lz.fixflow.controller;
 
 import com.lz.fixflow.common.PageResult;
 import com.lz.fixflow.common.Result;
+import com.lz.fixflow.dto.TicketAssignDTO;
 import com.lz.fixflow.dto.TicketCommentDTO;
 import com.lz.fixflow.dto.TicketCreateDTO;
 import com.lz.fixflow.dto.TicketQueryDTO;
@@ -83,5 +84,11 @@ public class TicketController {
     @GetMapping("/manage")
     public Result<PageResult<TicketVO>> manageTickets(TicketQueryDTO dto) {
         return Result.success(ticketService.searchTickets(dto));
+    }
+
+    @PostMapping("/{id}/assign")
+    public Result<TicketVO> assignTickets(@PathVariable String id,
+                                          @Valid @RequestBody TicketAssignDTO dto) {
+        return Result.success(ticketService.assignTicket(id,dto));
     }
 }

@@ -2,7 +2,6 @@ package com.lz.fixflow.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.lz.fixflow.common.BusinessException;
 import com.lz.fixflow.dto.TicketCommentDTO;
 import com.lz.fixflow.entity.Ticket;
@@ -32,7 +31,7 @@ public class TicketCommentImpl implements CommentService {
         TicketCommentVO vo = new TicketCommentVO();
 
         if (entity == null) {
-            throw new RuntimeException("");
+            throw new RuntimeException("内部错误");
         }
 
         vo.setId(entity.getId());
@@ -44,7 +43,7 @@ public class TicketCommentImpl implements CommentService {
         return vo;
     }
 
-    private void checkAccess(String id,Ticket entity) {
+    private void checkPermission(String id, Ticket entity) {
 
         if(entity.getCreatorId().equals(id)) {
             return;
@@ -75,7 +74,7 @@ public class TicketCommentImpl implements CommentService {
             throw new BusinessException("工单不存在");
         }
 
-        checkAccess(userid,ticket);
+        checkPermission(userid,ticket);
 
         List<TicketComment> list = ticketCommentMapper.selectList(
                 new LambdaQueryWrapper<TicketComment>()
@@ -100,7 +99,7 @@ public class TicketCommentImpl implements CommentService {
             throw new BusinessException("工单不存在");
         }
 
-        checkAccess(userid, ticket);
+        checkPermission(userid, ticket);
 
         ticketComment.setId(UUID.randomUUID().toString());
         ticketComment.setAuthorId(userid);
