@@ -408,7 +408,7 @@ public class TicketServiceImpl implements TicketService {
         if (!admin.getRole().equals("ADMIN")){
             throw new BusinessException("无权访问");
         }
-        if (!assignee.getRole().equals("assignee")){
+        if (!assignee.getRole().equals("ASSIGNEE")){
             throw new BusinessException("只分配给处理人员");
         }
 
