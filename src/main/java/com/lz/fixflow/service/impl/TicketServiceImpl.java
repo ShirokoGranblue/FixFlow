@@ -181,6 +181,44 @@ public class TicketServiceImpl implements TicketService {
     }
 
     @Override
+    @Transactional
+    public TicketVO reOpenTicket(String id) {
+
+        String userid = StpUtil.getLoginIdAsString();
+
+        User user = userMapper.selectById(userid);
+
+        if(user==null){
+            throw new BusinessException("用户不存在");
+        }
+
+        int row = ticketMapper.update(
+                new LambdaUpdateWrapper<Ticket>()
+                        .eq(Ticket::getId,id)
+                        .eq(Ticket::getStatus,"RESOLVED")
+                        .eq(Ticket::getCreatorId,user.getId())
+                        .isNotNull(Ticket::getAssigneeId)
+                        .set(Ticket::getStatus,"IN_PROGRESS")
+                        .set(Ticket::getUpdatedAt,LocalDateTime.now())
+                        .set(Ticket::getResolvedAt,null)
+        );
+
+        if(row == 0){
+            throw new BusinessException("工单已重新提交或工单不存在");
+        }
+
+        recordHistory(
+                id,
+                userid,
+                "REOPEN",
+                "RESOLVED",
+                "IN_PROGRESS"
+        );
+
+        return convertToVO(ticketMapper.selectById(id));
+    }
+
+    @Override
     public List<TicketVO> showTickets() {
         String userid = StpUtil.getLoginIdAsString();
         List<Ticket> list = ticketMapper.selectList(new LambdaQueryWrapper<Ticket>()

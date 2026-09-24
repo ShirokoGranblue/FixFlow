@@ -17,6 +17,8 @@ public interface TicketService {
 
     TicketVO cancelTicket(String id);
 
+    TicketVO reOpenTicket(String id);
+
     List<TicketVO> showTickets();
 
     TicketVO showTicket(String id);

@@ -46,6 +46,11 @@ public class TicketController {
         return Result.success(ticketService.getOpenTickets());
     }
 
+    @PostMapping("/{id}/reopen")
+    public Result<TicketVO> reOpenTicket(@PathVariable String id) {
+        return Result.success(ticketService.reOpenTicket(id));
+    }
+
     @PostMapping("/{id}/handle")
     public Result<TicketVO> handleTicket(@PathVariable String id) {
         return Result.success(ticketService.handleTicket(id));
