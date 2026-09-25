@@ -31,9 +31,10 @@ public class UserServiceImpl implements UserService {
     private final PermissionService permissionService;
 
     private UserVO convertToVO(User entity) {
+
         UserVO vo = new UserVO();
 
-        vo.setId(UUID.randomUUID().toString());
+        vo.setId(entity.getId());
         vo.setUsername(entity.getUsername());
         vo.setRole(entity.getRole());
         vo.setEmail(entity.getEmail());

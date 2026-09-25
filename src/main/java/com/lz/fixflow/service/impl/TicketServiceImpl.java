@@ -12,6 +12,7 @@ import com.lz.fixflow.dto.TicketQueryDTO;
 import com.lz.fixflow.entity.*;
 import com.lz.fixflow.enums.TicketAction;
 import com.lz.fixflow.enums.TicketStatus;
+import com.lz.fixflow.enums.UserRole;
 import com.lz.fixflow.mapper.*;
 import com.lz.fixflow.service.PermissionService;
 import com.lz.fixflow.service.TicketService;
@@ -58,7 +59,7 @@ public class TicketServiceImpl implements TicketService {
         vo.setCreatorId(entity.getCreatorId());
         vo.setCreatedAt(entity.getCreatedAt());
         vo.setUpdatedAt(entity.getUpdatedAt());
-        vo.setResolvedAt(LocalDateTime.now());
+        vo.setResolvedAt(entity.getResolvedAt());
 
         return vo;
     }
@@ -73,7 +74,7 @@ public class TicketServiceImpl implements TicketService {
             vo.setCategoryName(category.getName());
         }
 
-        vo.setId(UUID.randomUUID().toString());
+        vo.setId(entity.getId());
         vo.setTitle(entity.getTitle());
         vo.setDescription(entity.getDescription());
         vo.setPriority(entity.getPriority());
@@ -303,7 +304,6 @@ public class TicketServiceImpl implements TicketService {
 
         List<Ticket> list = ticketMapper.selectList(
                 new LambdaQueryWrapper<Ticket>()
-                    .eq(Ticket::getCreatorId,userid)
                     .eq(Ticket::getStatus, TicketStatus.OPEN.getValue())
                     .isNull(Ticket::getAssigneeId)
                     .orderByAsc(Ticket::getCreatedAt)
@@ -442,12 +442,13 @@ public class TicketServiceImpl implements TicketService {
     }
 
     @Override
+    @Transactional
     public TicketVO closeTicket(String id) {
 
         String userid = StpUtil.getLoginIdAsString();
         permissionService.requireStaff(userid);
 
-        int row=ticketMapper.update(null,
+        int row = ticketMapper.update(null,
                 new LambdaUpdateWrapper<Ticket>()
                         .eq(Ticket::getId,id)
                         .eq(Ticket::getStatus,TicketStatus.RESOLVED.getValue())
@@ -457,7 +458,7 @@ public class TicketServiceImpl implements TicketService {
         );
 
         if(row == 0){
-            throw  new BusinessException("工单不存在、不是你创建的工单或当前状态无法关闭");
+            throw  new BusinessException("工单不存在或当前状态无法关闭");
         }
 
         Ticket ticket = ticketMapper.selectById(id);
@@ -479,7 +480,8 @@ public class TicketServiceImpl implements TicketService {
     public List<TicketHistoryVO> getTicketHistory(String id){
 
         String userid = StpUtil.getLoginIdAsString();
-        permissionService.requireStaff(userid);
+        Ticket ticket = ticketMapper.selectById(id);
+        permissionService.requireTicketAccess(userid,ticket);
 
         List<TicketHistory> list = ticketHistoryMapper.selectList(
                 new LambdaQueryWrapper<TicketHistory>()
@@ -523,35 +525,25 @@ public class TicketServiceImpl implements TicketService {
             wrapper.eq(Ticket::getCategoryId,dto.getCategoryId());
         }
 
-        if("create_asc".equals(dto.getSort())){
-            wrapper.orderByAsc(Ticket::getCreatedAt);
-        }
-        if("create_desc".equals(dto.getSort())){
-            wrapper.orderByDesc(Ticket::getCreatedAt);
-        }
-        else{
-            wrapper.orderByDesc(Ticket::getCreatedAt);
-        }
-
-        if ("priority_asc".equals(dto.getSort())) {
-            wrapper.last("""
-                    ORDER BY CASE TICKET.priority
+        switch (dto.getSort()) {
+            case "create_asc" -> wrapper.orderByAsc(Ticket::getCreatedAt);
+            case "priority_asc" -> wrapper.last("""
+                    ORDER BY CASE priority
                         WHEN 'URGENT' THEN 4
                         WHEN 'HIGH' THEN 3
                         WHEN 'MEDIUM' THEN 2
                         WHEN 'LOW' THEN 1
                     END ASC
                     """);
-        }
-        if ("priority_desc".equals(dto.getSort())) {
-            wrapper.last("""
-                    ORDER BY CASE TICKET.priority
-                        WHEN 'URGENT' THEN 4
-                        WHEN 'HIGH' THEN 3
-                        WHEN 'MEDIUM' THEN 2
-                        WHEN 'LOW' THEN 1
-                    END DESC
-            """);
+            case "priority_desc" -> wrapper.last("""
+                            ORDER BY CASE priority
+                                WHEN 'URGENT' THEN 4
+                                WHEN 'HIGH' THEN 3
+                                WHEN 'MEDIUM' THEN 2
+                                WHEN 'LOW' THEN 1
+                            END DESC
+                    """);
+            case null, default -> wrapper.orderByDesc(Ticket::getCreatedAt);
         }
 
         Page<Ticket> result = ticketMapper.selectPage(page, wrapper);
@@ -593,6 +585,15 @@ public class TicketServiceImpl implements TicketService {
 
         permissionService.requireAdmin(userid);
 
+        User user = userMapper.selectById(dto.getAssignId());
+
+        if (user == null) {
+            throw new BusinessException("处理人员不存在");
+        }
+
+        if (UserRole.USER.getValue().equals(user.getRole())) {
+            throw new BusinessException("无法分配工单给普通用户");
+        }
         int row = ticketMapper.update(null,
                 new LambdaUpdateWrapper<Ticket>()
                         .eq(Ticket::getStatus,TicketStatus.OPEN.getValue())

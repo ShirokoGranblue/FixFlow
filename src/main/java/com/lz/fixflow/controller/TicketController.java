@@ -88,7 +88,7 @@ public class TicketController {
     }
 
     @GetMapping("/manage")
-    public Result<PageResult<TicketVO>> manageTickets(TicketQueryDTO dto) {
+    public Result<PageResult<TicketVO>> manageTickets(@Valid TicketQueryDTO dto) {
         return Result.success(ticketService.searchTickets(dto));
     }
 
