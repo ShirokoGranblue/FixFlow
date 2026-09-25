@@ -8,6 +8,7 @@ import com.lz.fixflow.dto.UserLoginDTO;
 import com.lz.fixflow.dto.UserRegisterDTO;
 import com.lz.fixflow.dto.UserRoleUpdateDTO;
 import com.lz.fixflow.entity.User;
+import com.lz.fixflow.enums.UserRole;
 import com.lz.fixflow.mapper.UserMapper;
 import com.lz.fixflow.service.UserService;
 import com.lz.fixflow.vo.LoginVO;
@@ -31,10 +32,6 @@ public class UserServiceImpl implements UserService {
     private UserVO convertToVO(User entity) {
         UserVO vo = new UserVO();
 
-        if (entity == null) {
-            throw new RuntimeException("");
-        }
-
         vo.setId(UUID.randomUUID().toString());
         vo.setUsername(entity.getUsername());
         vo.setRole(entity.getRole());
@@ -50,7 +47,7 @@ public class UserServiceImpl implements UserService {
         if (userid == null) {
             throw new BusinessException("用户不存在");
         }
-        if(!user.getRole().equals("ADMIN")){
+        if(!user.getRole().equals(UserRole.ADMIN.getValue())) {
             throw new BusinessException("你无权查看");
         }
     }
@@ -74,7 +71,7 @@ public class UserServiceImpl implements UserService {
         user.setPassword(passwordEncoder.encode(dto.getPassword()));
         user.setEmail(dto.getEmail());
         user.setUsername(dto.getUsername());
-        user.setRole("USER");
+        user.setRole(UserRole.USER.getValue());
         user.setCreatedAt(LocalDateTime.now());
 
         userMapper.insert(user);
@@ -117,7 +114,7 @@ public class UserServiceImpl implements UserService {
 
         List<User> list = userMapper.selectList(
                 new LambdaQueryWrapper<User>()
-                        .eq(User::getRole, "STAFF")
+                        .eq(User::getRole, UserRole.STAFF.getValue())
         );
 
         return list.stream()
@@ -138,7 +135,7 @@ public class UserServiceImpl implements UserService {
         int row = userMapper.update(null,
                 new LambdaUpdateWrapper<User>()
                         .eq(User::getId, id)
-                        .ne(User::getRole,"ADMIN")
+                        .ne(User::getRole,UserRole.ADMIN.getValue())
                         .ne(User::getRole,dto.getRole())
                         .set(User::getRole,dto.getRole())
         );

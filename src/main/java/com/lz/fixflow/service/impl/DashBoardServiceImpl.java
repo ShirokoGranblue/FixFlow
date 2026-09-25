@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lz.fixflow.common.BusinessException;
 import com.lz.fixflow.entity.Ticket;
 import com.lz.fixflow.entity.User;
+import com.lz.fixflow.enums.TicketStatus;
+import com.lz.fixflow.enums.UserRole;
 import com.lz.fixflow.mapper.CategoryMapper;
 import com.lz.fixflow.mapper.TicketMapper;
 import com.lz.fixflow.mapper.UserMapper;
@@ -34,27 +36,26 @@ public class DashBoardServiceImpl implements DashBoardService {
 
         DashBoardVO vo = new DashBoardVO();
 
-
         vo.setTotalCount(ticketMapper.selectCount(null));
 
         vo.setOpenCount(ticketMapper.selectCount(
                 new LambdaQueryWrapper<Ticket>()
-                        .eq(Ticket::getStatus,"OPEN")
+                        .eq(Ticket::getStatus,TicketStatus.OPEN.getValue())
         ));
 
         vo.setInProgressCount(ticketMapper.selectCount(
                 new LambdaQueryWrapper<Ticket>()
-                        .eq(Ticket::getStatus,"IN_PROGRESS")
+                        .eq(Ticket::getStatus,TicketStatus.IN_PROGRESS.getValue())
         ));
 
         vo.setResolvedCount(ticketMapper.selectCount(
                 new LambdaQueryWrapper<Ticket>()
-                        .eq(Ticket::getStatus,"RESOLVED")
+                        .eq(Ticket::getStatus,TicketStatus.RESOLVED.getValue())
         ));
 
         vo.setClosedCount(ticketMapper.selectCount(
                 new LambdaQueryWrapper<Ticket>()
-                    .eq(Ticket::getStatus,"CLOSED")
+                    .eq(Ticket::getStatus, TicketStatus.CLOSED.getValue())
         ));
 
         LocalDateTime start = LocalDate.now().atStartOfDay();
@@ -79,8 +80,8 @@ public class DashBoardServiceImpl implements DashBoardService {
             throw new BusinessException("用户不存在或未登录");
         }
 
-        if(!(Objects.equals(user.getRole(), "STAFF"))
-                && !(Objects.equals(user.getRole(), "ADMIN"))){
+        if(!(Objects.equals(user.getRole(), UserRole.STAFF.getValue()))
+                && !(Objects.equals(user.getRole(), UserRole.ADMIN.getValue()))){
 
             throw new BusinessException("无权查看Dashboard");
         }

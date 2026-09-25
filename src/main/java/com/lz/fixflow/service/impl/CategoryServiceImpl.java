@@ -1,7 +1,6 @@
 package com.lz.fixflow.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lz.fixflow.common.BusinessException;
 import com.lz.fixflow.entity.Category;
 import com.lz.fixflow.mapper.CategoryMapper;
@@ -35,7 +34,6 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public List<CategoryVO> getCategories(){
-        String userid = StpUtil.getLoginIdAsString();
 
         List<Category> list = categoryMapper.selectList(null);
 

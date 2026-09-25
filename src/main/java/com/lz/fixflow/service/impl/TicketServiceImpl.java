@@ -10,6 +10,9 @@ import com.lz.fixflow.dto.TicketAssignDTO;
 import com.lz.fixflow.dto.TicketCreateDTO;
 import com.lz.fixflow.dto.TicketQueryDTO;
 import com.lz.fixflow.entity.*;
+import com.lz.fixflow.enums.TicketAction;
+import com.lz.fixflow.enums.TicketStatus;
+import com.lz.fixflow.enums.UserRole;
 import com.lz.fixflow.mapper.*;
 import com.lz.fixflow.service.TicketService;
 import com.lz.fixflow.vo.TicketCommentVO;
@@ -92,8 +95,8 @@ public class TicketServiceImpl implements TicketService {
             throw new BusinessException("工单或用户不存在");
         }
 
-        if(!Objects.equals(user.getRole(), "STAFF")
-                &&!Objects.equals(user.getRole(), "ADMIN")){
+        if(!Objects.equals(user.getRole(), UserRole.STAFF.getValue())
+                &&!Objects.equals(user.getRole(), UserRole.ADMIN.getValue())){
             throw new BusinessException("无权处理");
         }
     }
@@ -111,7 +114,7 @@ public class TicketServiceImpl implements TicketService {
         User user = userMapper.selectById(userid);
 
         if (user!=null &&
-                user.getRole().equals("ADMIN")) {
+                user.getRole().equals(UserRole.ADMIN.getValue())) {
             return;
         }
 
@@ -138,6 +141,7 @@ public class TicketServiceImpl implements TicketService {
         ticketHistoryMapper.insert(ticketHistory);
     }
 
+
     @Override
     @Transactional(rollbackFor = Exception.class)
     public TicketVO createTicket(TicketCreateDTO dto){
@@ -156,7 +160,7 @@ public class TicketServiceImpl implements TicketService {
         ticket.setTitle(dto.getTitle());
         ticket.setDescription(dto.getDescription());
         ticket.setPriority(dto.getPriority());
-        ticket.setStatus("OPEN");
+        ticket.setStatus(TicketStatus.OPEN.getValue());
         ticket.setCreatedAt(LocalDateTime.now());
         ticket.setUpdatedAt(LocalDateTime.now());
 
@@ -164,7 +168,13 @@ public class TicketServiceImpl implements TicketService {
 
         ticketMapper.insert(ticket);
 
-        recordHistory(ticket.getId(),userid,"CREATE","NULL","OPEN");
+        recordHistory(
+                ticket.getId(),
+                userid,
+                TicketAction.CREATE.getValue(),
+                TicketStatus.NULL.getValue(),
+                TicketStatus.OPEN.getValue()
+        );
 
         return convertTicketToVO(ticket);
     }
@@ -173,7 +183,7 @@ public class TicketServiceImpl implements TicketService {
     @Transactional
     public TicketVO cancelTicket(String id) {
 
-        String userid =StpUtil.getLoginIdAsString();
+        String userid = StpUtil.getLoginIdAsString();
 
         User user = userMapper.selectById(userid);
 
@@ -185,9 +195,9 @@ public class TicketServiceImpl implements TicketService {
                 new LambdaUpdateWrapper<Ticket>()
                         .eq(Ticket::getId,id)
                         .eq(Ticket::getCreatorId,user.getId())
-                        .eq(Ticket::getStatus,"OPEN")
+                        .eq(Ticket::getStatus,TicketStatus.OPEN.getValue())
                         .isNull(Ticket::getAssigneeId)
-                        .set(Ticket::getStatus,"CANCELED")
+                        .set(Ticket::getStatus,TicketStatus.CANCELLED.getValue())
                         .set(Ticket::getUpdatedAt,LocalDateTime.now())
         );
 
@@ -197,9 +207,11 @@ public class TicketServiceImpl implements TicketService {
 
         recordHistory(id,
                 userid,
-                "CANCEL",
-                "OPEN",
-                "CANCELED");
+                TicketAction.CANCEL.getValue(),
+                TicketStatus.OPEN.getValue(),
+                TicketStatus.CANCELLED.getValue()
+        );
+
         return convertTicketToVO(ticketMapper.selectById(id));
     }
 
@@ -218,10 +230,10 @@ public class TicketServiceImpl implements TicketService {
         int row = ticketMapper.update(
                 new LambdaUpdateWrapper<Ticket>()
                         .eq(Ticket::getId,id)
-                        .eq(Ticket::getStatus,"RESOLVED")
+                        .eq(Ticket::getStatus,TicketStatus.RESOLVED.getValue())
                         .eq(Ticket::getCreatorId,user.getId())
                         .isNotNull(Ticket::getAssigneeId)
-                        .set(Ticket::getStatus,"IN_PROGRESS")
+                        .set(Ticket::getStatus,TicketStatus.IN_PROGRESS.getValue())
                         .set(Ticket::getUpdatedAt,LocalDateTime.now())
                         .set(Ticket::getResolvedAt,null)
         );
@@ -233,9 +245,9 @@ public class TicketServiceImpl implements TicketService {
         recordHistory(
                 id,
                 userid,
-                "REOPEN",
-                "RESOLVED",
-                "IN_PROGRESS"
+                TicketAction.REOPEN.getValue(),
+                TicketStatus.RESOLVED.getValue(),
+                TicketStatus.IN_PROGRESS.getValue()
         );
 
         return convertTicketToVO(ticketMapper.selectById(id));
@@ -243,7 +255,9 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     public List<TicketVO> showTickets() {
+
         String userid = StpUtil.getLoginIdAsString();
+
         List<Ticket> list = ticketMapper.selectList(new LambdaQueryWrapper<Ticket>()
                 .eq(Ticket::getCreatorId,userid)
                 .orderByDesc(Ticket::getCreatedAt)
@@ -260,6 +274,7 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     public TicketVO showTicket(String id) {
+
         String userid = StpUtil.getLoginIdAsString();
         Ticket ticket = ticketMapper.selectById(id);
 
@@ -276,13 +291,16 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     public List<TicketVO> getOpenTickets() {
+
         String userid = StpUtil.getLoginIdAsString();
         checkAccessPermission(userid);
-        List<Ticket> list = ticketMapper.selectList(new LambdaQueryWrapper<Ticket>()
-                .eq(Ticket::getCreatorId,userid)
-                .eq(Ticket::getStatus,"OPEN")
-                .isNull(Ticket::getAssigneeId)
-                .orderByAsc(Ticket::getCreatedAt)
+
+        List<Ticket> list = ticketMapper.selectList(
+                new LambdaQueryWrapper<Ticket>()
+                    .eq(Ticket::getCreatorId,userid)
+                    .eq(Ticket::getStatus, TicketStatus.OPEN.getValue())
+                    .isNull(Ticket::getAssigneeId)
+                    .orderByAsc(Ticket::getCreatedAt)
         );
 
         if (list==null|| list.isEmpty()){
@@ -297,15 +315,16 @@ public class TicketServiceImpl implements TicketService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public TicketVO handleTicket(String id) {
+
         String userid = StpUtil.getLoginIdAsString();
         checkAccessPermission(userid);
 
         int row = ticketMapper.update(null,
                 new LambdaUpdateWrapper<Ticket>()
-                        .eq(Ticket::getStatus,"OPEN")
+                        .eq(Ticket::getStatus,TicketStatus.OPEN.getValue())
                         .eq(Ticket::getId,id)
                         .isNull(Ticket::getAssigneeId)
-                        .set(Ticket::getStatus,"IN_PROGRESS")
+                        .set(Ticket::getStatus,TicketStatus.IN_PROGRESS.getValue())
                         .set(Ticket::getAssigneeId,userid)
                 );
 
@@ -315,20 +334,27 @@ public class TicketServiceImpl implements TicketService {
 
         Ticket ticket = ticketMapper.selectById(id);
 
-        recordHistory(id,userid,"HANDLE","OPEN","IN_PROGRESS");
+        recordHistory(
+                id,
+                userid,
+                TicketAction.HANDLE.getValue(),
+                TicketStatus.OPEN.getValue(),
+                TicketStatus.IN_PROGRESS.getValue()
+        );
 
         return convertTicketToVO(ticket);
     }
 
     @Override
     public List<TicketVO> getAssignedTickets() {
+
         String userid = StpUtil.getLoginIdAsString();
         checkAccessPermission(userid);
 
         List<Ticket> list = ticketMapper.selectList(
                 new LambdaQueryWrapper<Ticket>()
                         .eq(Ticket::getAssigneeId,userid)
-                        .eq(Ticket::getStatus,"IN_PROGRESS")
+                        .eq(Ticket::getStatus,TicketStatus.IN_PROGRESS.getValue())
                         .orderByDesc(Ticket::getUpdatedAt)
         );
 
@@ -344,15 +370,16 @@ public class TicketServiceImpl implements TicketService {
     @Override
     @Transactional (rollbackFor = Exception.class)
     public TicketVO resolveTicket(String id) {
+
         String userid = StpUtil.getLoginIdAsString();
         checkAccessPermission(userid);
 
         int row = ticketMapper.update(null,
                 new LambdaUpdateWrapper<Ticket>()
                         .eq(Ticket::getId,id)
-                        .eq(Ticket::getStatus,"IN_PROGRESS")
+                        .eq(Ticket::getStatus,TicketStatus.IN_PROGRESS.getValue())
                         .eq(Ticket::getAssigneeId,userid)
-                        .set(Ticket::getStatus,"RESOLVED")
+                        .set(Ticket::getStatus,TicketStatus.RESOLVED.getValue())
                         .set(Ticket::getUpdatedAt,LocalDateTime.now())
                         .set(Ticket::getResolvedAt,LocalDateTime.now())
                 );
@@ -363,37 +390,52 @@ public class TicketServiceImpl implements TicketService {
 
         Ticket ticket = ticketMapper.selectById(id);
 
-        recordHistory(id,userid,"RESOLVE","IN_PROGRESS","RESOLVED");
+        recordHistory(
+                id,
+                userid,
+                TicketAction.RESOLVE.getValue(),
+                TicketStatus.IN_PROGRESS.getValue(),
+                TicketStatus.RESOLVED.getValue()
+        );
 
         return convertTicketToVO(ticket);
     }
 
     @Override
     public TicketVO closeTicket(String id) {
+
         String userid = StpUtil.getLoginIdAsString();
         checkAccessPermission(userid);
 
         int row=ticketMapper.update(null,
                 new LambdaUpdateWrapper<Ticket>()
                         .eq(Ticket::getId,id)
-                        .eq(Ticket::getStatus,"RESOLVED")
+                        .eq(Ticket::getStatus,TicketStatus.RESOLVED.getValue())
                         .eq(Ticket::getAssigneeId,userid)
-                        .set(Ticket::getStatus,"CLOSED")
+                        .set(Ticket::getStatus,TicketStatus.CLOSED.getValue())
                         .set(Ticket::getUpdatedAt,LocalDateTime.now())
         );
+
         if(row == 0){
             throw  new BusinessException("工单不存在、不是你创建的工单或当前状态无法关闭");
         }
 
         Ticket ticket = ticketMapper.selectById(id);
 
-        recordHistory(id,userid,"CLOSE","RESOLVED","CLOSED");
+        recordHistory(
+                id,
+                userid,
+                TicketAction.CLOSE.getValue(),
+                TicketStatus.RESOLVED.getValue(),
+                TicketStatus.CLOSED.getValue()
+        );
 
         return convertTicketToVO(ticket);
     }
 
     @Override
     public List<TicketHistoryVO> getTicketHistory(String id){
+
         String userid = StpUtil.getLoginIdAsString();
         checkAccessPermission(userid);
 
@@ -410,6 +452,7 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     public PageResult<TicketVO> searchTickets(TicketQueryDTO dto) {
+
         String userid = StpUtil.getLoginIdAsString();
         checkAccessPermission(userid);
 
@@ -481,7 +524,8 @@ public class TicketServiceImpl implements TicketService {
                 result.getTotal(),
                 result.getCurrent(),
                 result.getSize(),
-                result.getPages());
+                result.getPages()
+        );
     }
 
     @Override
@@ -500,22 +544,23 @@ public class TicketServiceImpl implements TicketService {
             throw new BusinessException("分配人员不存在");
         }
 
-        if (!admin.getRole().equals("ADMIN")){
+        if (!admin.getRole().equals(UserRole.ADMIN.getValue())){
             throw new BusinessException("无权访问");
         }
-        if (!assignee.getRole().equals("STAFF")){
+        if (!assignee.getRole().equals(UserRole.STAFF.getValue())){
             throw new BusinessException("只分配给处理人员");
         }
 
         int row = ticketMapper.update(null,
                 new LambdaUpdateWrapper<Ticket>()
-                        .eq(Ticket::getStatus,"OPEN")
+                        .eq(Ticket::getStatus,TicketStatus.OPEN.getValue())
                         .eq(Ticket::getId,id)
                         .isNull(Ticket::getAssigneeId)
-                        .set(Ticket::getStatus,"IN_PROGRESS")
+                        .set(Ticket::getStatus,TicketStatus.IN_PROGRESS.getValue())
                         .set(Ticket::getAssigneeId,dto.getAssignId())
                         .set(Ticket::getUpdatedAt,LocalDateTime.now())
         );
+
         if (row == 0){
             throw new BusinessException("工单不存在或已被处理");
         }
@@ -523,9 +568,9 @@ public class TicketServiceImpl implements TicketService {
         recordHistory(
                 id,
                 userid,
-                "ASSIGN",
-                "OPEN",
-                "IN_PROGRESS"
+                TicketAction.ASSIGN.getValue(),
+                TicketStatus.OPEN.getValue(),
+                TicketStatus.IN_PROGRESS.getValue()
         );
 
         Ticket ticket = ticketMapper.selectById(id);
@@ -537,8 +582,8 @@ public class TicketServiceImpl implements TicketService {
     public TicketDetailVO getTicketDetail(String id) {
 
         String userid = StpUtil.getLoginIdAsString();
-
         Ticket ticket = ticketMapper.selectById(id);
+
         if (ticket == null) {
             throw new BusinessException("工单不存在");
         }

@@ -7,6 +7,7 @@ import com.lz.fixflow.dto.TicketCommentDTO;
 import com.lz.fixflow.entity.Ticket;
 import com.lz.fixflow.entity.TicketComment;
 import com.lz.fixflow.entity.User;
+import com.lz.fixflow.enums.UserRole;
 import com.lz.fixflow.mapper.TicketCommentMapper;
 import com.lz.fixflow.mapper.TicketMapper;
 import com.lz.fixflow.mapper.UserMapper;
@@ -57,7 +58,7 @@ public class TicketCommentImpl implements CommentService {
         User user = userMapper.selectById(userid);
 
         if (user!=null &&
-                user.getRole().equals("ADMIN")) {
+                user.getRole().equals(UserRole.ADMIN.getValue())) {
             return;
         }
 
