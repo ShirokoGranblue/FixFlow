@@ -10,6 +10,7 @@ import com.lz.fixflow.entity.Ticket;
 import com.lz.fixflow.service.CommentService;
 import com.lz.fixflow.service.TicketService;
 import com.lz.fixflow.vo.TicketCommentVO;
+import com.lz.fixflow.vo.TicketDetailVO;
 import com.lz.fixflow.vo.TicketHistoryVO;
 import com.lz.fixflow.vo.TicketVO;
 import jakarta.validation.Valid;
@@ -100,5 +101,10 @@ public class TicketController {
     @PostMapping("/{id}/cancel")
     public Result<TicketVO> cancelTickets(@PathVariable String id) {
         return Result.success(ticketService.cancelTicket(id));
+    }
+
+    @PostMapping("/{id}/detail")
+    public Result<TicketDetailVO> detailTicket(@PathVariable String id) {
+        return  Result.success(ticketService.getTicketDetail(id));
     }
 }

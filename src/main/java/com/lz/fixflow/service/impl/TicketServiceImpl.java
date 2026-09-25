@@ -9,15 +9,11 @@ import com.lz.fixflow.common.PageResult;
 import com.lz.fixflow.dto.TicketAssignDTO;
 import com.lz.fixflow.dto.TicketCreateDTO;
 import com.lz.fixflow.dto.TicketQueryDTO;
-import com.lz.fixflow.entity.Category;
-import com.lz.fixflow.entity.Ticket;
-import com.lz.fixflow.entity.TicketHistory;
-import com.lz.fixflow.entity.User;
-import com.lz.fixflow.mapper.CategoryMapper;
-import com.lz.fixflow.mapper.TicketHistoryMapper;
-import com.lz.fixflow.mapper.TicketMapper;
-import com.lz.fixflow.mapper.UserMapper;
+import com.lz.fixflow.entity.*;
+import com.lz.fixflow.mapper.*;
 import com.lz.fixflow.service.TicketService;
+import com.lz.fixflow.vo.TicketCommentVO;
+import com.lz.fixflow.vo.TicketDetailVO;
 import com.lz.fixflow.vo.TicketHistoryVO;
 import com.lz.fixflow.vo.TicketVO;
 import lombok.RequiredArgsConstructor;
@@ -34,11 +30,12 @@ import java.util.UUID;
 public class TicketServiceImpl implements TicketService {
 
     private final TicketMapper ticketMapper;
+    private final TicketCommentMapper ticketCommentMapper;
     private final UserMapper userMapper;
     private final TicketHistoryMapper ticketHistoryMapper;
     private final CategoryMapper categoryMapper;
 
-    private TicketVO convertToVO(Ticket entity) {
+    private TicketVO convertTicketToVO(Ticket entity) {
 
         TicketVO vo = new TicketVO();
         Category category = categoryMapper.selectById(entity.getCategoryId());
@@ -62,27 +59,21 @@ public class TicketServiceImpl implements TicketService {
 
         return vo;
     }
+    private TicketCommentVO convertTicketCommentToVO(TicketComment entity) {
 
-    private void checkAccessPermission(String id){
+        TicketCommentVO vo = new TicketCommentVO();
 
-        User user = userMapper.selectById(id);
+        vo.setId(entity.getId());
+        vo.setTicketId(entity.getTicketId());
+        vo.setAuthorId(entity.getAuthorId());
+        vo.setCreatedAt(entity.getCreatedAt());
+        vo.setContent(entity.getContent());
 
-        if(user.getId()==null){
-            throw new BusinessException("工单或用户不存在");
-        }
-
-        if(!Objects.equals(user.getRole(), "STAFF")
-                &&!Objects.equals(user.getRole(), "ADMIN")){
-            throw new BusinessException("无权处理");
-        }
+        return vo;
     }
-
     private TicketHistoryVO convertHistoryToVO(TicketHistory ticketHistory){
-        TicketHistoryVO vo = new TicketHistoryVO();
 
-        if(ticketHistory==null){
-            throw new BusinessException("内部错误");
-        }
+        TicketHistoryVO vo = new TicketHistoryVO();
 
         vo.setId(ticketHistory.getId());
         vo.setCreatedAt(ticketHistory.getCreatedAt());
@@ -93,7 +84,39 @@ public class TicketServiceImpl implements TicketService {
 
         return vo;
     }
+    private void checkAccessPermission(String userid){
 
+        User user = userMapper.selectById(userid);
+
+        if(user.getId()==null){
+            throw new BusinessException("工单或用户不存在");
+        }
+
+        if(!Objects.equals(user.getRole(), "STAFF")
+                &&!Objects.equals(user.getRole(), "ADMIN")){
+            throw new BusinessException("无权处理");
+        }
+    }
+    private void checkTicketPermission(String userid, Ticket entity) {
+
+        if(entity.getCreatorId().equals(userid)) {
+            return;
+        }
+
+        if (entity.getAssigneeId()!=null &&
+                entity.getAssigneeId().equals(userid)) {
+            return;
+        }
+
+        User user = userMapper.selectById(userid);
+
+        if (user!=null &&
+                user.getRole().equals("ADMIN")) {
+            return;
+        }
+
+        throw new BusinessException("无权访问工单评论");
+    }
     private void recordHistory(
             String ticketid,
             String operatorid,
@@ -143,7 +166,7 @@ public class TicketServiceImpl implements TicketService {
 
         recordHistory(ticket.getId(),userid,"CREATE","NULL","OPEN");
 
-        return convertToVO(ticket);
+        return convertTicketToVO(ticket);
     }
 
     @Override
@@ -177,7 +200,7 @@ public class TicketServiceImpl implements TicketService {
                 "CANCEL",
                 "OPEN",
                 "CANCELED");
-        return convertToVO(ticketMapper.selectById(id));
+        return convertTicketToVO(ticketMapper.selectById(id));
     }
 
     @Override
@@ -215,7 +238,7 @@ public class TicketServiceImpl implements TicketService {
                 "IN_PROGRESS"
         );
 
-        return convertToVO(ticketMapper.selectById(id));
+        return convertTicketToVO(ticketMapper.selectById(id));
     }
 
     @Override
@@ -231,7 +254,7 @@ public class TicketServiceImpl implements TicketService {
         }
 
         return list.stream()
-                .map(this::convertToVO)
+                .map(this::convertTicketToVO)
                 .toList();
     }
 
@@ -248,7 +271,7 @@ public class TicketServiceImpl implements TicketService {
             throw new BusinessException("无权查看");
         }
 
-        return convertToVO(ticket);
+        return convertTicketToVO(ticket);
     }
 
     @Override
@@ -267,7 +290,7 @@ public class TicketServiceImpl implements TicketService {
         }
 
         return list.stream()
-                .map(this::convertToVO)
+                .map(this::convertTicketToVO)
                 .toList();
     }
 
@@ -294,7 +317,7 @@ public class TicketServiceImpl implements TicketService {
 
         recordHistory(id,userid,"HANDLE","OPEN","IN_PROGRESS");
 
-        return convertToVO(ticket);
+        return convertTicketToVO(ticket);
     }
 
     @Override
@@ -314,7 +337,7 @@ public class TicketServiceImpl implements TicketService {
         }
 
         return list.stream()
-                .map(this::convertToVO)
+                .map(this::convertTicketToVO)
                 .toList();
     }
 
@@ -342,7 +365,7 @@ public class TicketServiceImpl implements TicketService {
 
         recordHistory(id,userid,"RESOLVE","IN_PROGRESS","RESOLVED");
 
-        return convertToVO(ticket);
+        return convertTicketToVO(ticket);
     }
 
     @Override
@@ -366,7 +389,7 @@ public class TicketServiceImpl implements TicketService {
 
         recordHistory(id,userid,"CLOSE","RESOLVED","CLOSED");
 
-        return convertToVO(ticket);
+        return convertTicketToVO(ticket);
     }
 
     @Override
@@ -450,7 +473,7 @@ public class TicketServiceImpl implements TicketService {
         List<TicketVO> list =
                 result.getRecords()
                 .stream()
-                .map(this::convertToVO)
+                .map(this::convertTicketToVO)
                 .toList();
 
         return new PageResult<>(
@@ -507,6 +530,47 @@ public class TicketServiceImpl implements TicketService {
 
         Ticket ticket = ticketMapper.selectById(id);
 
-        return convertToVO(ticket);
+        return convertTicketToVO(ticket);
+    }
+
+    @Override
+    public TicketDetailVO getTicketDetail(String id) {
+
+        String userid = StpUtil.getLoginIdAsString();
+
+        Ticket ticket = ticketMapper.selectById(id);
+        if (ticket == null) {
+            throw new BusinessException("工单不存在");
+        }
+
+        checkTicketPermission(userid,ticket);
+
+        List<TicketComment> comments = ticketCommentMapper.selectList(
+                new LambdaQueryWrapper<TicketComment>()
+                        .eq(TicketComment::getTicketId,id)
+                        .orderByDesc(TicketComment::getCreatedAt)
+        );
+        List<TicketHistory> histories = ticketHistoryMapper.selectList(
+                new LambdaQueryWrapper<TicketHistory>()
+                        .eq(TicketHistory::getTicketId,id)
+                        .orderByDesc(TicketHistory::getCreatedAt)
+        );
+
+
+        List<TicketCommentVO> commentVO = comments.stream()
+                .map(this::convertTicketCommentToVO)
+                .toList();
+
+        List<TicketHistoryVO> historyVO = histories.stream()
+                .map(this::convertHistoryToVO)
+                .toList();
+
+        TicketDetailVO detail = new TicketDetailVO();
+
+        detail.setTicket(convertTicketToVO(ticket));
+        detail.setTicketComments(commentVO);
+        detail.setTicketHistory(historyVO);
+
+        return detail;
     }
 }

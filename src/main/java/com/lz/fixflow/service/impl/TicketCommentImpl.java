@@ -43,18 +43,18 @@ public class TicketCommentImpl implements CommentService {
         return vo;
     }
 
-    private void checkPermission(String id, Ticket entity) {
+    private void checkPermission(String userid, Ticket entity) {
 
-        if(entity.getCreatorId().equals(id)) {
+        if(entity.getCreatorId().equals(userid)) {
             return;
         }
 
         if (entity.getAssigneeId()!=null &&
-                entity.getAssigneeId().equals(id)) {
+                entity.getAssigneeId().equals(userid)) {
             return;
         }
 
-        User user = userMapper.selectById(id);
+        User user = userMapper.selectById(userid);
 
         if (user!=null &&
                 user.getRole().equals("ADMIN")) {

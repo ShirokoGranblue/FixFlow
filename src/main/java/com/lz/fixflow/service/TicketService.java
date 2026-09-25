@@ -4,6 +4,7 @@ import com.lz.fixflow.common.PageResult;
 import com.lz.fixflow.dto.TicketAssignDTO;
 import com.lz.fixflow.dto.TicketCreateDTO;
 import com.lz.fixflow.dto.TicketQueryDTO;
+import com.lz.fixflow.vo.TicketDetailVO;
 import com.lz.fixflow.vo.TicketHistoryVO;
 import com.lz.fixflow.vo.TicketVO;
 import org.springframework.stereotype.Service;
@@ -38,4 +39,6 @@ public interface TicketService {
     PageResult<TicketVO> searchTickets(TicketQueryDTO dto);
 
     TicketVO assignTicket(String id ,TicketAssignDTO dto);
+
+    TicketDetailVO getTicketDetail(String id);
 }
