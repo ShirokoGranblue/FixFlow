@@ -10,6 +10,7 @@ import com.lz.fixflow.dto.UserRoleUpdateDTO;
 import com.lz.fixflow.entity.User;
 import com.lz.fixflow.enums.UserRole;
 import com.lz.fixflow.mapper.UserMapper;
+import com.lz.fixflow.service.PermissionService;
 import com.lz.fixflow.service.UserService;
 import com.lz.fixflow.vo.LoginVO;
 import com.lz.fixflow.vo.UserVO;
@@ -17,7 +18,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.awt.*;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -28,6 +28,7 @@ public class UserServiceImpl implements UserService {
 
     private final UserMapper userMapper;
     private final PasswordEncoder passwordEncoder;
+    private final PermissionService permissionService;
 
     private UserVO convertToVO(User entity) {
         UserVO vo = new UserVO();
@@ -39,17 +40,6 @@ public class UserServiceImpl implements UserService {
         vo.setCreatedAt(entity.getCreatedAt());
 
         return vo;
-    }
-    private void checkAdmin(String userid) {
-
-        User user = userMapper.selectById(userid);
-
-        if (userid == null) {
-            throw new BusinessException("用户不存在");
-        }
-        if(!user.getRole().equals(UserRole.ADMIN.getValue())) {
-            throw new BusinessException("你无权查看");
-        }
     }
 
     @Override
@@ -109,8 +99,8 @@ public class UserServiceImpl implements UserService {
     @Override
     public List<UserVO> getStaffUsers(){
 
-        String userid = StpUtil.getLoginIdAsString();
-        checkAdmin(userid);
+        String adminid = StpUtil.getLoginIdAsString();
+        permissionService.requireAdmin(adminid);
 
         List<User> list = userMapper.selectList(
                 new LambdaQueryWrapper<User>()
@@ -126,7 +116,7 @@ public class UserServiceImpl implements UserService {
     public UserVO updateRole(String id, UserRoleUpdateDTO dto){
 
         String adminid = StpUtil.getLoginIdAsString();
-        checkAdmin(adminid);
+        permissionService.requireAdmin(adminid);
 
         if(id.equals(adminid)){
             throw new BusinessException("不能修改自己的角色");

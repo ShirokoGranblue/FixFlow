@@ -12,6 +12,7 @@ import com.lz.fixflow.mapper.TicketCommentMapper;
 import com.lz.fixflow.mapper.TicketMapper;
 import com.lz.fixflow.mapper.UserMapper;
 import com.lz.fixflow.service.CommentService;
+import com.lz.fixflow.service.PermissionService;
 import com.lz.fixflow.vo.TicketCommentVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -27,6 +28,7 @@ public class TicketCommentImpl implements CommentService {
     private final TicketCommentMapper ticketCommentMapper;
     private final TicketMapper ticketMapper;
     private final UserMapper userMapper;
+    private final PermissionService permissionService;
 
     private TicketCommentVO convertToVO(TicketComment entity) {
         TicketCommentVO vo = new TicketCommentVO();
@@ -44,38 +46,13 @@ public class TicketCommentImpl implements CommentService {
         return vo;
     }
 
-    private void checkPermission(String userid, Ticket entity) {
-
-        if(entity.getCreatorId().equals(userid)) {
-            return;
-        }
-
-        if (entity.getAssigneeId()!=null &&
-                entity.getAssigneeId().equals(userid)) {
-            return;
-        }
-
-        User user = userMapper.selectById(userid);
-
-        if (user!=null &&
-                user.getRole().equals(UserRole.ADMIN.getValue())) {
-            return;
-        }
-
-        throw new BusinessException("无权访问工单评论");
-    }
-
     @Override
     public List<TicketCommentVO> getComment(String id){
 
         String userid = StpUtil.getLoginIdAsString();
         Ticket ticket = ticketMapper.selectById(id);
 
-        if(ticket==null) {
-            throw new BusinessException("工单不存在");
-        }
-
-        checkPermission(userid,ticket);
+        permissionService.requireTicketAccess(userid,ticket);
 
         List<TicketComment> list = ticketCommentMapper.selectList(
                 new LambdaQueryWrapper<TicketComment>()
@@ -100,7 +77,7 @@ public class TicketCommentImpl implements CommentService {
             throw new BusinessException("工单不存在");
         }
 
-        checkPermission(userid, ticket);
+        permissionService.requireTicketAccess(userid,ticket);
 
         ticketComment.setId(UUID.randomUUID().toString());
         ticketComment.setAuthorId(userid);

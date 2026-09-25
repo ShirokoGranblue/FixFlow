@@ -14,6 +14,7 @@ import com.lz.fixflow.enums.TicketAction;
 import com.lz.fixflow.enums.TicketStatus;
 import com.lz.fixflow.enums.UserRole;
 import com.lz.fixflow.mapper.*;
+import com.lz.fixflow.service.PermissionService;
 import com.lz.fixflow.service.TicketService;
 import com.lz.fixflow.vo.TicketCommentVO;
 import com.lz.fixflow.vo.TicketDetailVO;
@@ -37,6 +38,7 @@ public class TicketServiceImpl implements TicketService {
     private final UserMapper userMapper;
     private final TicketHistoryMapper ticketHistoryMapper;
     private final CategoryMapper categoryMapper;
+    private final PermissionService permissionService;
 
     private TicketVO convertTicketToVO(Ticket entity) {
 
@@ -87,39 +89,6 @@ public class TicketServiceImpl implements TicketService {
 
         return vo;
     }
-    private void checkAccessPermission(String userid){
-
-        User user = userMapper.selectById(userid);
-
-        if(user.getId()==null){
-            throw new BusinessException("工单或用户不存在");
-        }
-
-        if(!Objects.equals(user.getRole(), UserRole.STAFF.getValue())
-                &&!Objects.equals(user.getRole(), UserRole.ADMIN.getValue())){
-            throw new BusinessException("无权处理");
-        }
-    }
-    private void checkTicketPermission(String userid, Ticket entity) {
-
-        if(entity.getCreatorId().equals(userid)) {
-            return;
-        }
-
-        if (entity.getAssigneeId()!=null &&
-                entity.getAssigneeId().equals(userid)) {
-            return;
-        }
-
-        User user = userMapper.selectById(userid);
-
-        if (user!=null &&
-                user.getRole().equals(UserRole.ADMIN.getValue())) {
-            return;
-        }
-
-        throw new BusinessException("无权访问工单评论");
-    }
     private void recordHistory(
             String ticketid,
             String operatorid,
@@ -145,6 +114,7 @@ public class TicketServiceImpl implements TicketService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public TicketVO createTicket(TicketCreateDTO dto){
+
         String userid = StpUtil.getLoginIdAsString();
         Ticket ticket = new Ticket();
 
@@ -187,9 +157,7 @@ public class TicketServiceImpl implements TicketService {
 
         User user = userMapper.selectById(userid);
 
-        if(user==null){
-            throw new BusinessException("用户不存在");
-        }
+        permissionService.requireTicketAccess(userid,ticketMapper.selectById(id));
 
         int row = ticketMapper.update(null ,
                 new LambdaUpdateWrapper<Ticket>()
@@ -205,7 +173,8 @@ public class TicketServiceImpl implements TicketService {
             throw new BusinessException("工单已经取消或不存在");
         }
 
-        recordHistory(id,
+        recordHistory(
+                id,
                 userid,
                 TicketAction.CANCEL.getValue(),
                 TicketStatus.OPEN.getValue(),
@@ -223,9 +192,7 @@ public class TicketServiceImpl implements TicketService {
 
         User user = userMapper.selectById(userid);
 
-        if(user==null){
-            throw new BusinessException("用户不存在");
-        }
+        permissionService.requireTicketAccess(userid,ticketMapper.selectById(id));
 
         int row = ticketMapper.update(
                 new LambdaUpdateWrapper<Ticket>()
@@ -257,13 +224,16 @@ public class TicketServiceImpl implements TicketService {
     public List<TicketVO> showTickets() {
 
         String userid = StpUtil.getLoginIdAsString();
+        Ticket ticket = ticketMapper.selectById(userid);
+
+        permissionService.requireTicketAccess(userid,ticket);
 
         List<Ticket> list = ticketMapper.selectList(new LambdaQueryWrapper<Ticket>()
                 .eq(Ticket::getCreatorId,userid)
                 .orderByDesc(Ticket::getCreatedAt)
         );
 
-        if(list==null|| list.isEmpty()){
+        if(list == null || list.isEmpty()){
             throw new BusinessException("当前无工单");
         }
 
@@ -278,13 +248,7 @@ public class TicketServiceImpl implements TicketService {
         String userid = StpUtil.getLoginIdAsString();
         Ticket ticket = ticketMapper.selectById(id);
 
-        if(ticket == null){
-            throw new BusinessException("工单不存在");
-        }
-
-        if(!ticket.getCreatorId().equals(userid)) {
-            throw new BusinessException("无权查看");
-        }
+        permissionService.requireTicketAccess(userid,ticket);
 
         return convertTicketToVO(ticket);
     }
@@ -293,7 +257,7 @@ public class TicketServiceImpl implements TicketService {
     public List<TicketVO> getOpenTickets() {
 
         String userid = StpUtil.getLoginIdAsString();
-        checkAccessPermission(userid);
+        permissionService.requireStaff(userid);
 
         List<Ticket> list = ticketMapper.selectList(
                 new LambdaQueryWrapper<Ticket>()
@@ -317,7 +281,7 @@ public class TicketServiceImpl implements TicketService {
     public TicketVO handleTicket(String id) {
 
         String userid = StpUtil.getLoginIdAsString();
-        checkAccessPermission(userid);
+        permissionService.requireStaff(userid);
 
         int row = ticketMapper.update(null,
                 new LambdaUpdateWrapper<Ticket>()
@@ -349,7 +313,7 @@ public class TicketServiceImpl implements TicketService {
     public List<TicketVO> getAssignedTickets() {
 
         String userid = StpUtil.getLoginIdAsString();
-        checkAccessPermission(userid);
+        permissionService.requireStaff(userid);
 
         List<Ticket> list = ticketMapper.selectList(
                 new LambdaQueryWrapper<Ticket>()
@@ -372,7 +336,7 @@ public class TicketServiceImpl implements TicketService {
     public TicketVO resolveTicket(String id) {
 
         String userid = StpUtil.getLoginIdAsString();
-        checkAccessPermission(userid);
+        permissionService.requireStaff(userid);
 
         int row = ticketMapper.update(null,
                 new LambdaUpdateWrapper<Ticket>()
@@ -405,7 +369,7 @@ public class TicketServiceImpl implements TicketService {
     public TicketVO closeTicket(String id) {
 
         String userid = StpUtil.getLoginIdAsString();
-        checkAccessPermission(userid);
+        permissionService.requireStaff(userid);
 
         int row=ticketMapper.update(null,
                 new LambdaUpdateWrapper<Ticket>()
@@ -437,7 +401,7 @@ public class TicketServiceImpl implements TicketService {
     public List<TicketHistoryVO> getTicketHistory(String id){
 
         String userid = StpUtil.getLoginIdAsString();
-        checkAccessPermission(userid);
+        permissionService.requireStaff(userid);
 
         List<TicketHistory> list = ticketHistoryMapper.selectList(
                 new LambdaQueryWrapper<TicketHistory>()
@@ -454,7 +418,8 @@ public class TicketServiceImpl implements TicketService {
     public PageResult<TicketVO> searchTickets(TicketQueryDTO dto) {
 
         String userid = StpUtil.getLoginIdAsString();
-        checkAccessPermission(userid);
+
+        permissionService.requireStaff(userid);
 
         long pageSize = Math.min(dto.getPageSize(),100);
         Page<Ticket> page = new Page<>(dto.getCurrent(),pageSize);
@@ -537,19 +502,7 @@ public class TicketServiceImpl implements TicketService {
         User admin = userMapper.selectById(userid);
         User assignee = userMapper.selectById(dto.getAssignId());
 
-        if (admin==null){
-            throw new BusinessException("管理员用户不存在");
-        }
-        if (assignee==null){
-            throw new BusinessException("分配人员不存在");
-        }
-
-        if (!admin.getRole().equals(UserRole.ADMIN.getValue())){
-            throw new BusinessException("无权访问");
-        }
-        if (!assignee.getRole().equals(UserRole.STAFF.getValue())){
-            throw new BusinessException("只分配给处理人员");
-        }
+        permissionService.requireStaff(userid);
 
         int row = ticketMapper.update(null,
                 new LambdaUpdateWrapper<Ticket>()
@@ -584,23 +537,19 @@ public class TicketServiceImpl implements TicketService {
         String userid = StpUtil.getLoginIdAsString();
         Ticket ticket = ticketMapper.selectById(id);
 
-        if (ticket == null) {
-            throw new BusinessException("工单不存在");
-        }
-
-        checkTicketPermission(userid,ticket);
+        permissionService.requireTicketAccess(userid,ticket);
 
         List<TicketComment> comments = ticketCommentMapper.selectList(
                 new LambdaQueryWrapper<TicketComment>()
                         .eq(TicketComment::getTicketId,id)
                         .orderByDesc(TicketComment::getCreatedAt)
         );
+
         List<TicketHistory> histories = ticketHistoryMapper.selectList(
                 new LambdaQueryWrapper<TicketHistory>()
                         .eq(TicketHistory::getTicketId,id)
                         .orderByDesc(TicketHistory::getCreatedAt)
         );
-
 
         List<TicketCommentVO> commentVO = comments.stream()
                 .map(this::convertTicketCommentToVO)

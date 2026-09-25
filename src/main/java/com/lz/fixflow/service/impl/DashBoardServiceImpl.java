@@ -11,6 +11,7 @@ import com.lz.fixflow.mapper.CategoryMapper;
 import com.lz.fixflow.mapper.TicketMapper;
 import com.lz.fixflow.mapper.UserMapper;
 import com.lz.fixflow.service.DashBoardService;
+import com.lz.fixflow.service.PermissionService;
 import com.lz.fixflow.vo.DashBoardVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -26,13 +27,14 @@ public class DashBoardServiceImpl implements DashBoardService {
     private final TicketMapper ticketMapper;
     private final UserMapper userMapper;
     private final CategoryMapper categoryMapper;
+    private final PermissionService permissionService;
 
     @Override
     public DashBoardVO getDashBoard() {
 
         String userid = StpUtil.getLoginIdAsString();
 
-        checkPermission(userid);
+        permissionService.requireStaff(userid);
 
         DashBoardVO vo = new DashBoardVO();
 
@@ -72,18 +74,4 @@ public class DashBoardServiceImpl implements DashBoardService {
         return vo;
     }
 
-    private void checkPermission(String userid){
-
-        User user = userMapper.selectById(userid);
-
-        if(userid==null){
-            throw new BusinessException("用户不存在或未登录");
-        }
-
-        if(!(Objects.equals(user.getRole(), UserRole.STAFF.getValue()))
-                && !(Objects.equals(user.getRole(), UserRole.ADMIN.getValue()))){
-
-            throw new BusinessException("无权查看Dashboard");
-        }
-    }
 }
