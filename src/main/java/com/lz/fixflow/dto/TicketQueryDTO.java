@@ -18,5 +18,4 @@ public class TicketQueryDTO {
     private Long categoryId;
 
     private String sort;
-
 }
