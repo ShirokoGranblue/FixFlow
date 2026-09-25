@@ -12,7 +12,6 @@ import com.lz.fixflow.dto.TicketQueryDTO;
 import com.lz.fixflow.entity.*;
 import com.lz.fixflow.enums.TicketAction;
 import com.lz.fixflow.enums.TicketStatus;
-import com.lz.fixflow.enums.UserRole;
 import com.lz.fixflow.mapper.*;
 import com.lz.fixflow.service.PermissionService;
 import com.lz.fixflow.service.TicketService;
@@ -26,7 +25,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -499,10 +497,7 @@ public class TicketServiceImpl implements TicketService {
 
         String userid = StpUtil.getLoginIdAsString();
 
-        User admin = userMapper.selectById(userid);
-        User assignee = userMapper.selectById(dto.getAssignId());
-
-        permissionService.requireStaff(userid);
+        permissionService.requireAdmin(userid);
 
         int row = ticketMapper.update(null,
                 new LambdaUpdateWrapper<Ticket>()

@@ -47,7 +47,7 @@ public class UserServiceImpl implements UserService {
 
         User user = new User();
 
-        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<User>();
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
 
         long count = userMapper.selectCount(
                 wrapper.eq(User::getUsername, dto.getUsername())
@@ -72,7 +72,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public LoginVO login(UserLoginDTO dto)
     {
-        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<User>();
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
 
         User user = userMapper.selectOne(
                 wrapper.eq(User::getUsername , dto.getUsername())
