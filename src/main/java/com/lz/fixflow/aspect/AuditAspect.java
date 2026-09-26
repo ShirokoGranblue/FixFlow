@@ -22,7 +22,7 @@ import java.time.LocalDateTime;
 @RequiredArgsConstructor
 public class AuditAspect {
 
-    private AuditLogMapper auditLogMapper;
+    private final AuditLogMapper auditLogMapper;
 
     @Around("@annotation(audit)")
     public Object Around(

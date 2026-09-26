@@ -6,12 +6,14 @@ import com.lz.fixflow.common.PageResult;
 import com.lz.fixflow.entity.AuditLog;
 import com.lz.fixflow.mapper.AuditLogMapper;
 import com.lz.fixflow.service.AuditLogService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class AuditLogServiceImpl implements AuditLogService {
 
-    private AuditLogMapper auditLogMapper;
+    private final AuditLogMapper auditLogMapper;
 
     @Override
     public PageResult<AuditLog> getAuditLog(long current, long pageSize) {
