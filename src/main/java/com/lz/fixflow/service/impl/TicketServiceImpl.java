@@ -4,6 +4,7 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.lz.fixflow.annotation.Audit;
 import com.lz.fixflow.common.BusinessException;
 import com.lz.fixflow.common.PageResult;
 import com.lz.fixflow.dto.TicketAssignDTO;
@@ -135,6 +136,7 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    @Audit("用户创建工单")
     public TicketVO createTicket(TicketCreateDTO dto){
 
         String userid = StpUtil.getLoginIdAsString();
@@ -173,6 +175,7 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     @Transactional
+    @Audit("用户取消工单")
     public TicketVO cancelTicket(String id) {
 
         String userid = StpUtil.getLoginIdAsString();
@@ -211,6 +214,7 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     @Transactional
+    @Audit("工单重新发布")
     public TicketVO reOpenTicket(String id) {
 
         String userid = StpUtil.getLoginIdAsString();
@@ -249,6 +253,7 @@ public class TicketServiceImpl implements TicketService {
     }
 
     @Override
+    @Audit("用户读取工单")
     public List<TicketVO> showTickets() {
 
         String userid = StpUtil.getLoginIdAsString();
@@ -284,6 +289,7 @@ public class TicketServiceImpl implements TicketService {
     }
 
     @Override
+    @Audit("用户读取工单")
     public TicketVO showTicket(String id) {
 
         String userid = StpUtil.getLoginIdAsString();
@@ -297,6 +303,7 @@ public class TicketServiceImpl implements TicketService {
     }
 
     @Override
+    @Audit("工作人员读取待处理工单")
     public List<TicketVO> getOpenTickets() {
 
         List<Ticket> list = ticketMapper.selectList(
@@ -332,6 +339,7 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    @Audit("工单被接取")
     public TicketVO handleTicket(String id) {
 
         String userid = StpUtil.getLoginIdAsString();
@@ -365,6 +373,7 @@ public class TicketServiceImpl implements TicketService {
     }
 
     @Override
+    @Audit("工作人员读取处理中工单")
     public List<TicketVO> getAssignedTickets() {
 
         String userid = StpUtil.getLoginIdAsString();
@@ -402,6 +411,7 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     @Transactional (rollbackFor = Exception.class)
+    @Audit("工单已被处理完成")
     public TicketVO resolveTicket(String id) {
 
         String userid = StpUtil.getLoginIdAsString();
@@ -437,6 +447,7 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     @Transactional
+    @Audit("工单已关闭")
     public TicketVO closeTicket(String id) {
 
         String userid = StpUtil.getLoginIdAsString();
@@ -470,6 +481,7 @@ public class TicketServiceImpl implements TicketService {
     }
 
     @Override
+    @Audit("用户访问工单历史")
     public List<TicketHistoryVO> getTicketHistory(String id){
 
         String userid = StpUtil.getLoginIdAsString();
@@ -488,6 +500,7 @@ public class TicketServiceImpl implements TicketService {
     }
 
     @Override
+    @Audit("工作人员查询搜索工单页")
     public PageResult<TicketVO> searchTickets(TicketQueryDTO dto) {
 
         long pageSize = Math.min(dto.getPageSize(),100);
@@ -569,6 +582,7 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     @Transactional
+    @Audit("管理员分派工单处理人")
     public TicketVO assignTicket(String id, TicketAssignDTO dto){
 
         String userid = StpUtil.getLoginIdAsString();
@@ -612,6 +626,7 @@ public class TicketServiceImpl implements TicketService {
     }
 
     @Override
+    @Audit("用户读取工单信息")
     public TicketDetailVO getTicketDetail(String id) {
 
         String userid = StpUtil.getLoginIdAsString();

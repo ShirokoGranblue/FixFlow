@@ -31,4 +31,5 @@ public class GlobalExceptionHandler {
     public Result<Void> handleNotRoleException(NotRoleException e){
         return Result.error(4030,"没有权限执行此操作");
     }
+
 }

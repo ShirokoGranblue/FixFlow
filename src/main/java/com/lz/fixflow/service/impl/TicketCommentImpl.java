@@ -2,6 +2,7 @@ package com.lz.fixflow.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.lz.fixflow.annotation.Audit;
 import com.lz.fixflow.common.BusinessException;
 import com.lz.fixflow.dto.TicketCommentDTO;
 import com.lz.fixflow.entity.Ticket;
@@ -66,6 +67,7 @@ public class TicketCommentImpl implements CommentService {
     }
 
     @Override
+    @Audit("用户添加评论")
     public TicketCommentVO addComment(String id , TicketCommentDTO dto){
 
         String userid = StpUtil.getLoginIdAsString();

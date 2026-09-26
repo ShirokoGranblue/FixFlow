@@ -3,6 +3,7 @@ package com.lz.fixflow.service.impl;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.lz.fixflow.annotation.Audit;
 import com.lz.fixflow.common.BusinessException;
 import com.lz.fixflow.dto.UserLoginDTO;
 import com.lz.fixflow.dto.UserRegisterDTO;
@@ -44,6 +45,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Audit("用户注册")
     public UserVO register(UserRegisterDTO dto){
 
         User user = new User();
@@ -71,6 +73,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Audit("用户登录")
     public LoginVO login(UserLoginDTO dto)
     {
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
@@ -114,6 +117,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Audit("修改用户角色")
     public UserVO updateRole(String id, UserRoleUpdateDTO dto){
 
         String adminid = StpUtil.getLoginIdAsString();

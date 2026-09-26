@@ -2,6 +2,7 @@ package com.lz.fixflow.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.lz.fixflow.annotation.Audit;
 import com.lz.fixflow.common.BusinessException;
 import com.lz.fixflow.entity.Ticket;
 import com.lz.fixflow.entity.User;
@@ -30,6 +31,7 @@ public class DashBoardServiceImpl implements DashBoardService {
     private final PermissionService permissionService;
 
     @Override
+    @Audit("管理人员查看了统计数据")
     public DashBoardVO getDashBoard() {
 
         DashBoardVO vo = new DashBoardVO();
