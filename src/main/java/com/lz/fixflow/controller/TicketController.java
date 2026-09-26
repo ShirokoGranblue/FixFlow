@@ -1,12 +1,13 @@
 package com.lz.fixflow.controller;
 
+import cn.dev33.satoken.annotation.SaCheckRole;
+import cn.dev33.satoken.annotation.SaMode;
 import com.lz.fixflow.common.PageResult;
 import com.lz.fixflow.common.Result;
 import com.lz.fixflow.dto.TicketAssignDTO;
 import com.lz.fixflow.dto.TicketCommentDTO;
 import com.lz.fixflow.dto.TicketCreateDTO;
 import com.lz.fixflow.dto.TicketQueryDTO;
-import com.lz.fixflow.entity.Ticket;
 import com.lz.fixflow.service.CommentService;
 import com.lz.fixflow.service.TicketService;
 import com.lz.fixflow.vo.TicketCommentVO;
@@ -43,7 +44,8 @@ public class TicketController {
     }
 
     @GetMapping("/open")
-    public Result<List<TicketVO>> openTickets() {
+    @SaCheckRole(value = {"STAFF","ADMIN"}, mode = SaMode.OR)
+    public Result<List<TicketVO>> getOpenTickets() {
         return Result.success(ticketService.getOpenTickets());
     }
 
@@ -53,21 +55,25 @@ public class TicketController {
     }
 
     @PostMapping("/{id}/handle")
+    @SaCheckRole(value = {"STAFF","ADMIN"},mode=SaMode.OR)
     public Result<TicketVO> handleTicket(@PathVariable String id) {
         return Result.success(ticketService.handleTicket(id));
     }
 
     @GetMapping("/assign")
-    public Result<List<TicketVO>> assignTickets() {
+    @SaCheckRole(value = {"ADMIN","STAFF"},mode=SaMode.OR)
+    public Result<List<TicketVO>> getAssignTickets() {
         return Result.success(ticketService.getAssignedTickets());
     }
 
     @PostMapping("/{id}/resolve")
+    @SaCheckRole(value = {"STAFF","ADMIN"},mode=SaMode.OR)
     public Result<TicketVO> resolveTicket(@PathVariable String id) {
         return Result.success(ticketService.resolveTicket(id));
     }
 
     @PostMapping("/{id}/close")
+    @SaCheckRole(value = {"STAFF","ADMIN"},mode = SaMode.OR)
     public Result<TicketVO> closeTicket(@PathVariable String id) {
         return Result.success(ticketService.closeTicket(id));
     }
@@ -88,11 +94,13 @@ public class TicketController {
     }
 
     @GetMapping("/manage")
-    public Result<PageResult<TicketVO>> manageTickets(@Valid TicketQueryDTO dto) {
+    @SaCheckRole(value = {"STAFF", "ADMIN"}, mode = SaMode.OR)
+    public Result<PageResult<TicketVO>> searchTickets(@Valid TicketQueryDTO dto) {
         return Result.success(ticketService.searchTickets(dto));
     }
 
     @PostMapping("/{id}/assign")
+    @SaCheckRole(value = "ADMIN")
     public Result<TicketVO> assignTickets(@PathVariable String id,
                                           @Valid @RequestBody TicketAssignDTO dto) {
         return Result.success(ticketService.assignTicket(id,dto));

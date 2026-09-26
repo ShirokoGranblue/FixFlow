@@ -32,10 +32,6 @@ public class DashBoardServiceImpl implements DashBoardService {
     @Override
     public DashBoardVO getDashBoard() {
 
-        String userid = StpUtil.getLoginIdAsString();
-
-        permissionService.requireStaff(userid);
-
         DashBoardVO vo = new DashBoardVO();
 
         vo.setTotalCount(ticketMapper.selectCount(null));

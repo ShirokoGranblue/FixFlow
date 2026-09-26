@@ -299,9 +299,6 @@ public class TicketServiceImpl implements TicketService {
     @Override
     public List<TicketVO> getOpenTickets() {
 
-        String userid = StpUtil.getLoginIdAsString();
-        permissionService.requireStaff(userid);
-
         List<Ticket> list = ticketMapper.selectList(
                 new LambdaQueryWrapper<Ticket>()
                     .eq(Ticket::getStatus, TicketStatus.OPEN.getValue())
@@ -338,7 +335,6 @@ public class TicketServiceImpl implements TicketService {
     public TicketVO handleTicket(String id) {
 
         String userid = StpUtil.getLoginIdAsString();
-        permissionService.requireStaff(userid);
 
         int row = ticketMapper.update(null,
                 new LambdaUpdateWrapper<Ticket>()
@@ -372,7 +368,6 @@ public class TicketServiceImpl implements TicketService {
     public List<TicketVO> getAssignedTickets() {
 
         String userid = StpUtil.getLoginIdAsString();
-        permissionService.requireStaff(userid);
 
         List<Ticket> list = ticketMapper.selectList(
                 new LambdaQueryWrapper<Ticket>()
@@ -410,7 +405,6 @@ public class TicketServiceImpl implements TicketService {
     public TicketVO resolveTicket(String id) {
 
         String userid = StpUtil.getLoginIdAsString();
-        permissionService.requireStaff(userid);
 
         int row = ticketMapper.update(null,
                 new LambdaUpdateWrapper<Ticket>()
@@ -446,7 +440,6 @@ public class TicketServiceImpl implements TicketService {
     public TicketVO closeTicket(String id) {
 
         String userid = StpUtil.getLoginIdAsString();
-        permissionService.requireStaff(userid);
 
         int row = ticketMapper.update(null,
                 new LambdaUpdateWrapper<Ticket>()
@@ -497,11 +490,8 @@ public class TicketServiceImpl implements TicketService {
     @Override
     public PageResult<TicketVO> searchTickets(TicketQueryDTO dto) {
 
-        String userid = StpUtil.getLoginIdAsString();
-
-        permissionService.requireStaff(userid);
-
         long pageSize = Math.min(dto.getPageSize(),100);
+
         Page<Ticket> page = new Page<>(dto.getCurrent(),pageSize);
         LambdaQueryWrapper<Ticket> wrapper = new LambdaQueryWrapper<>();
 
@@ -582,8 +572,6 @@ public class TicketServiceImpl implements TicketService {
     public TicketVO assignTicket(String id, TicketAssignDTO dto){
 
         String userid = StpUtil.getLoginIdAsString();
-
-        permissionService.requireAdmin(userid);
 
         User user = userMapper.selectById(dto.getAssignId());
 

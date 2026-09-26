@@ -110,17 +110,6 @@ class TicketLogicTests {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"staff", "creator"})
-    void onlyAdminCanAssign(String operator) {
-        actor = operator;
-        TicketAssignDTO dto = new TicketAssignDTO();
-        dto.setAssignId("staff");
-
-        assertThrows(BusinessException.class, () -> service.assignTicket(ticket.getId(), dto));
-        verify(tickets, never()).update(isNull(), any(Wrapper.class));
-    }
-
-    @ParameterizedTest
     @ValueSource(strings = {"creator", "staff", "admin"})
     void participantsAndAdminCanReadHistory(String operator) {
         actor = operator;

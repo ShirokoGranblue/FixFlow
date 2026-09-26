@@ -1,5 +1,6 @@
 package com.lz.fixflow.controller;
 
+import cn.dev33.satoken.annotation.SaCheckRole;
 import com.lz.fixflow.common.Result;
 import com.lz.fixflow.dto.UserRoleUpdateDTO;
 import com.lz.fixflow.service.UserService;
@@ -13,6 +14,7 @@ import java.util.List;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/admin/user")
+@SaCheckRole(value = "ADMIN")
 public class AdminController {
 
     private final UserService userService;

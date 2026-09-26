@@ -1,10 +1,13 @@
 package com.lz.fixflow.common;
 
+import cn.dev33.satoken.exception.NotRoleException;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import cn.dev33.satoken.exception.NotLoginException;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -22,5 +25,10 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(NotLoginException.class)
     public Result<Void> handleNotLoginException(NotLoginException e){
         return Result.error(4010,"请先登录");
+    }
+
+    @ExceptionHandler(NotRoleException.class)
+    public Result<Void> handleNotRoleException(NotRoleException e){
+        return Result.error(4030,"没有权限执行此操作");
     }
 }
