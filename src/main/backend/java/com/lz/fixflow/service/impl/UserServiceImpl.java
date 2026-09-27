@@ -1,5 +1,6 @@
 package com.lz.fixflow.service.impl;
 
+import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
@@ -94,10 +95,26 @@ public class UserServiceImpl implements UserService {
 
         LoginVO vo = new LoginVO();
         vo.setUser(convertToVO(user));
-        vo.setSatokenName(StpUtil.getTokenName());
-        vo.setSatokenValue(StpUtil.getTokenValue());
+        vo.setTokenName(StpUtil.getTokenName());
+        vo.setTokenValue(StpUtil.getTokenValue());
 
         return vo;
+    }
+
+    @Override
+    public UserVO getCurrentUser() {
+
+        String userid = StpUtil.getLoginIdAsString();
+        User user = userMapper.selectOne(
+                new LambdaQueryWrapper<User>()
+                        .eq(User::getId , userid)
+        );
+
+        if(user==null){
+            throw new BusinessException("用户不存在");
+        }
+
+        return convertToVO(user);
     }
 
     @Override

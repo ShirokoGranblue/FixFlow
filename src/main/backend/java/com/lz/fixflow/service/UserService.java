@@ -16,6 +16,8 @@ public interface UserService {
 
     LoginVO login(UserLoginDTO dto);
 
+    UserVO getCurrentUser();
+
     List<UserVO> getStaffUsers();
 
     UserVO updateRole(String id, UserRoleUpdateDTO dto);

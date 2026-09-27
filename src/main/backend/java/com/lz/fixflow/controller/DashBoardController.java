@@ -18,7 +18,7 @@ public class DashBoardController {
 
     private final DashBoardService dashBoardService;
 
-    @GetMapping("/")
+    @GetMapping
     public Result<DashBoardVO> getDashBoard() {
         return Result.success(dashBoardService.getDashBoard());
     }

@@ -33,7 +33,7 @@ public class TicketController {
         return Result.success(ticketService.createTicket(dto));
     }
 
-    @GetMapping("/my")
+    @GetMapping("/my-tickets")
     public Result<List<TicketVO>> showTickets() {
         return Result.success(ticketService.showTickets());
     }

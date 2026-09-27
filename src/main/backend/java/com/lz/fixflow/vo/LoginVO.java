@@ -6,9 +6,9 @@ import lombok.Data;
 @Data
 public class LoginVO {
 
-    private String satokenName;
+    private String tokenName;
 
-    private String satokenValue;
+    private String tokenValue;
 
     private UserVO user;
 }

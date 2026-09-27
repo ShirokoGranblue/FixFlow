@@ -17,7 +17,7 @@ public class CategoryController {
 
     private final CategoryService categoryService;
 
-    @GetMapping("/")
+    @GetMapping
     public Result<List<CategoryVO>> getCategories() {
         return Result.success(categoryService.getCategories());
     }

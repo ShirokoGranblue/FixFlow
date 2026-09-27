@@ -28,4 +28,8 @@ public class UserController {
         return Result.success(userService.login(dto));
     }
 
+    @GetMapping("/me")
+    public Result<UserVO> me(){
+        return Result.success(userService.getCurrentUser());
+    }
 }
