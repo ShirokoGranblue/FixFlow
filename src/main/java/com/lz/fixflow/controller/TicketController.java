@@ -111,8 +111,8 @@ public class TicketController {
         return Result.success(ticketService.cancelTicket(id));
     }
 
-    @PostMapping("/{id}/detail")
-    public Result<TicketDetailVO> detailTicket(@PathVariable String id) {
+    @GetMapping("/{id}/detail")
+    public Result<TicketDetailVO> getTicketDetail(@PathVariable String id) {
         return  Result.success(ticketService.getTicketDetail(id));
     }
 }
