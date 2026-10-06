@@ -51,6 +51,10 @@ export interface TicketCreateDTO{
     categoryId : number | null
 }
 
+export interface TicketCommentDTO{
+    content:string
+}
+
 export function getMyTickets(){
 
     return request.get<Result<TicketVO[]>>
@@ -59,7 +63,7 @@ export function getMyTickets(){
     )
 }
 
-export function getTicketDetail(id:string){
+export function getTicketById(id:string){
     return request.get<Result<TicketDetailVO>>
     (
         `/ticket/${id}/detail`
@@ -71,5 +75,49 @@ export function createTicket(data:TicketCreateDTO){
     (
         '/ticket/create',
         data
+    )
+}
+
+export function getComment(id:string){
+    return request.get<Result<TicketCommentVO>>
+    (
+        `/${id}/comment`
+    )
+}
+
+export function addComment(data:TicketCommentDTO,id:string){
+    return request.post<Result<TicketCommentVO>>(
+        `/ticket/${id}/comment`,
+        data
+    )
+}
+
+export function cancelTicket(id:string){
+    return request.post<Result<TicketVO>>(
+        `/ticket/${id}/cancel`
+    )
+}
+
+export function closeTicket(id:string){
+    return request.post<Result<TicketVO>>(
+        `/ticket/${id}/close`
+    )
+}
+
+export function reOpenTicket(id:string){
+    return request.post<Result<TicketVO>>(
+        `/ticket/${id}/reopen`
+    )
+}
+
+export function resolveTicket(id:string){
+    return request.post<Result<TicketVO>>(
+        `/ticket/${id}/resolve`
+    )
+}
+
+export function handleTicket(id:string){
+    return request.post<Result<TicketVO>>(
+        `/ticket/${id}/handle`
     )
 }

@@ -2,7 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import Login from '../views/Login.vue'
 import Home from '../views/Home.vue'
 import MyTickets from '../views/MyTickets.vue'
-import TicketDetail from '../views/TicketDetail.vue'
+import TicketById from '../views/TicketById.vue'
 import {useUserStore} from "../stores/user.ts"
 
 import Register from '../views/Register.vue'
@@ -45,7 +45,7 @@ const router = createRouter({
         },
         {
             path: '/ticket/:id',
-            component: TicketDetail,
+            component: TicketById,
             meta:{
                 requireAuth: true
             }
