@@ -5,13 +5,19 @@ import MyTickets from '../views/MyTickets.vue'
 import TicketDetail from '../views/TicketDetail.vue'
 import {useUserStore} from "../stores/user.ts"
 
+import Register from '../views/Register.vue'
+
 const router = createRouter({
     history: createWebHistory(),
 
     routes: [
         {
-            path: '/login',
+            path: '/user/login',
             component: Login
+        },
+        {
+            path:'/user/register',
+            component:Register
         },
         {
             path:'/',
@@ -42,7 +48,7 @@ router.beforeEach(
 
     const userStore = useUserStore()
 
-    if (to.path === '/login'){
+    if (to.path === '/user/login'){
         if(userStore.user){
             return '/'
         }
@@ -71,7 +77,7 @@ router.beforeEach(
         return true
     }
 
-    return '/login'
+    return '/user/login'
 })
 
 export default router

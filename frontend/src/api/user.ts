@@ -6,7 +6,7 @@ export interface LoginForm {
 }
 
 export interface UserVO {
-    id: number
+    id: string
     username: string
     email: string
     role: string
@@ -18,11 +18,18 @@ export interface LoginVO {
     user: UserVO
 }
 
+export interface RegisterDTO{
+    username :string
+    password:string 
+    email:string
+}
+
 export interface Result<T> {
     code: number
     message: string
     data: T
 }
+
 export function getCurrentUser(){
     return request.get<Result<UserVO>>(
         '/user/me'
@@ -31,7 +38,15 @@ export function getCurrentUser(){
 
 export function login(data: LoginForm) {
     return request.post<Result<LoginVO>>(
-        '/users/login',
+        '/user/login',
         data
     )
 }
+
+export function register(data:RegisterDTO){
+    return request.post<Result<UserVO>>(
+        '/user/register',
+        data
+    )
+}
+

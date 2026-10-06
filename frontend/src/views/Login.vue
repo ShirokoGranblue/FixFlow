@@ -28,7 +28,7 @@ async function handleLogin() {
 
     const result = response.data
 
-    if (result.code !== 0) {
+    if (result.code !== 200) {
       ElMessage.error(result.message)
       return
     }
@@ -50,6 +50,7 @@ async function handleLogin() {
   } finally {
     loading.value = false
   }
+
 }
 </script>
 
@@ -85,6 +86,12 @@ async function handleLogin() {
         >
           登录
         </el-button>
+
+        <el-button
+            @click="router.push('/user/register')"
+          >
+            注册账号
+          </el-button>
 
       </el-form>
 
