@@ -7,6 +7,8 @@ import {useUserStore} from "../stores/user.ts"
 
 import Register from '../views/Register.vue'
 
+import CreateTicket from '../views/CreateTicket.vue'
+
 const router = createRouter({
     history: createWebHistory(),
 
@@ -28,10 +30,17 @@ const router = createRouter({
             }
         },
         {
-            path:'/my-tickets',
+            path:'/ticket/my-tickets',
             component: MyTickets,
             meta:{
                 requireAuth: true
+            }
+        },
+        {
+            path:'/ticket/create',
+            component: CreateTicket,
+            meta:{
+                requireAuth:true    
             }
         },
         {

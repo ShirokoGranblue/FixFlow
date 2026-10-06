@@ -1,4 +1,4 @@
-<script setup lang ="ts">
+<script setup lang="ts">
 import { ref, onMounted } from 'vue';
 import { getMyTickets } from '../api/ticket.ts';
 import type { TicketVO } from '../api/ticket.ts';
@@ -9,45 +9,48 @@ const tickets = ref<TicketVO[]>([]);
 const loading = ref(false);
 
 async function loadTickets() {
-    loading.value = true;
+  loading.value = true;
 
-    try {
-        const response = await getMyTickets();
-        if(response.data.code === 200 ){
-            tickets.value = response.data.data;
-        }
-    } finally {
-        loading.value = false;
+  try {
+    const response = await getMyTickets();
+    if (response.data.code === 200) {
+      tickets.value = response.data.data;
     }
+  } finally {
+    loading.value = false;
+  }
 }
 
-function openTicket(id:number){
-    router.push(`/ticket/${id}`);
+function openTicket(id: number) {
+  router.push(`/ticket/${id}`);
 }
 
 onMounted(() => {
-    loadTickets();
+  loadTickets();
 });
 </script>
 
 <template>
   <div class="page">
+
     <h2>我的工单</h2>
 
+      <el-button
+        type="primary"
+        @click="router.push('/ticket/create')"
+        >
+        新建工单
+      </el-button>
     <div v-if="loading">
       正在加载...
     </div>
-
+    
     <div v-else-if="tickets.length === 0">
       暂无工单
     </div>
 
     <div v-else>
-      <div
-        v-for="ticket in tickets"
-        :key="ticket.id"
-        class="ticket-item"
-      >
+      <div v-for="ticket in tickets" :key="ticket.id" class="ticket-item">
         <el-button @click="openTicket(ticket.id)">
           查看详情
         </el-button>
@@ -65,6 +68,7 @@ onMounted(() => {
         </p>
       </div>
     </div>
+
   </div>
 </template>
 

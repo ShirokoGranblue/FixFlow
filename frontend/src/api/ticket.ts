@@ -44,6 +44,13 @@ export interface TicketDetailVO{
     ticketComments:TicketCommentVO[]
 }
 
+export interface TicketCreateDTO{
+    title :string
+    description : string
+    priority : string
+    categoryId : number | null
+}
+
 export function getMyTickets(){
 
     return request.get<Result<TicketVO[]>>
@@ -56,5 +63,13 @@ export function getTicketDetail(id:string){
     return request.get<Result<TicketDetailVO>>
     (
         `/ticket/${id}/detail`
+    )
+}
+
+export function createTicket(data:TicketCreateDTO){
+    return request.post<Result<TicketVO>>
+    (
+        '/ticket/create',
+        data
     )
 }
