@@ -60,7 +60,7 @@ public class TicketController {
         return Result.success(ticketService.handleTicket(id));
     }
 
-    @GetMapping("/assign")
+    @GetMapping("/assigned")
     @SaCheckRole(value = {"ADMIN","STAFF"},mode=SaMode.OR)
     public Result<List<TicketVO>> getAssignTickets() {
         return Result.success(ticketService.getAssignedTickets());

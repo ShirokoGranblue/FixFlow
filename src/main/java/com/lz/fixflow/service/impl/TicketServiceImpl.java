@@ -558,6 +558,7 @@ public class TicketServiceImpl implements TicketService {
                 .toList();
 
         List<Category> categories;
+        
         if (categoryIds.isEmpty()) {
             categories = List.of();
         }else {

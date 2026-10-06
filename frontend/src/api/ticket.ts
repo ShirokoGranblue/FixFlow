@@ -55,6 +55,28 @@ export interface TicketCommentDTO{
     content:string
 }
 
+export interface PageResult<T>{
+    record:T[]
+    total:number
+    current:number
+    pageSize:number
+    pages:number
+}
+
+export interface TicketQuery{
+    current:number
+    pageSize:number
+
+    keyword?:string
+    status?:string
+    priority?:string
+    categoryId?:number
+}
+
+export interface TicketAssignDTO{
+    assigneeId:string
+}
+
 export function getMyTickets(){
 
     return request.get<Result<TicketVO[]>>
@@ -119,5 +141,30 @@ export function resolveTicket(id:string){
 export function handleTicket(id:string){
     return request.post<Result<TicketVO>>(
         `/ticket/${id}/handle`
+    )
+}
+
+export function getManageTickets(params:TicketQuery){
+    return request.get<Result<PageResult<TicketVO>>>(
+        '/ticket/manage',{params}
+    )
+}
+
+export function getOpenTickets(){
+    return request.get<Result<TicketVO[]>>(
+        '/ticket/open'
+    )
+}
+
+export function getAssignedTickets(){
+    return request.get<Result<TicketVO[]>>(
+        '/ticket/assigned'
+    )
+}
+
+export function assignTicket(id:string,data:TicketAssignDTO){
+    return request.post<Result<TicketVO>>(
+        `/ticket/${id}/assign`, 
+        data
     )
 }

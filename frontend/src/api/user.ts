@@ -50,3 +50,8 @@ export function register(data:RegisterDTO){
     )
 }
 
+export function getStaffUsers(){
+    return request.get<Result<UserVO[]>>(
+        '/admin/user/staff'
+    )
+}
