@@ -5,7 +5,7 @@ import jakarta.validation.constraints.Min;
 import lombok.Data;
 
 @Data
-public class PageQueryDTO {
+public class AuditPageQueryDTO {
 
     @Min(value = 1, message = "页码不能小于1")
     private long current = 1;

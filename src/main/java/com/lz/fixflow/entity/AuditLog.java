@@ -1,6 +1,7 @@
 package com.lz.fixflow.entity;
 
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
@@ -14,7 +15,10 @@ public class AuditLog {
     private Long id;
 
     private String ip;
-    private String userid;
+
+    @TableField("user_id")
+    private String userId;
+
     private String action;
     private String method;
     private Boolean success;

@@ -78,7 +78,7 @@ public class AuditAspect {
         try {
             AuditLog log = new AuditLog();
 
-            log.setUserid(userid);
+            log.setUserId(userid);
             log.setAction(action);
             log.setSuccess(success);
             log.setErrorMessage(errorMessage);
