@@ -18,7 +18,7 @@ const userStore = useUserStore()
     </p>
 
     <p>
-      当前角色：
+      你当前身份是：
       {{ userStore.user?.role }}
     </p>
 

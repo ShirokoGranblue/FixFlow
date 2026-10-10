@@ -8,8 +8,15 @@ import CreateTicket from '../views/CreateTicket.vue'
 import Register from '../views/Register.vue'
 import TicketManage from '../views/TicketManage.vue'
 import StaffWorkspace from '../views/StaffWorkspace.vue'
+import UserManage from '../views/UserManage.vue'
+import Dashboard from '../views/Dashboard.vue'
+import AuditLog from '../views/AuditLog.vue'
+import MainLayout from '../layouts/MainLayout.vue'
+import NotFound from '../views/NotFound.vue'
+import { ElMessage } from 'element-plus'
 
 const router = createRouter({
+
     history: createWebHistory(),
 
     routes: [
@@ -23,56 +30,77 @@ const router = createRouter({
         },
         {
             path:'/',
-            component: Home,
+            component: MainLayout,
 
             meta:{
                 requireAuth: true
-            }
+            },
+
+            children:[
+                {
+                    path:'',
+                    component:Home
+                },
+                {
+                    path:'ticket/my-tickets',
+                    component: MyTickets,
+                },
+                {
+                    path:'ticket/create',
+                    component: CreateTicket,
+                },
+                {
+                    path: 'ticket/:id',
+                    component: TicketById,
+                },
+                {
+                    path:'ticket/manage',
+                    component:TicketManage,
+                    meta:{
+                        roles:['STAFF','ADMIN']
+                    }
+                },
+                {
+                    path:'ticket/staff',
+                    component:StaffWorkspace,
+                    meta:{
+                        roles:['STAFF','ADMIN']
+                    }
+                },
+                {
+                    path:'admin/users',
+                    component:UserManage,
+                    meta:{
+                        roles:['ADMIN']
+                    }
+                },
+                {
+                    path:'dashboard',
+                    component:Dashboard,
+                    meta:{
+                        roles:['STAFF','ADMIN']
+                    }
+                },
+                {
+                    path:'audit-log',
+                    component:AuditLog,
+                    meta:{
+                        roles:['ADMIN']
+                    }
+                }
+            ]
         },
         {
-            path:'/ticket/my-tickets',
-            component: MyTickets,
-            meta:{
-                requireAuth: true
-            }
-        },
-        {
-            path:'/ticket/create',
-            component: CreateTicket,
-            meta:{
-                requireAuth:true    
-            }
-        },
-        {
-            path: '/ticket/:id',
-            component: TicketById,
-            meta:{
-                requireAuth: true
-            }
-        },
-        {
-            path:'/ticket/manage',
-            component:TicketManage,
-            meta:{
-                requireAuth:true,
-                roles:['STAFF','ADMIN']
-            }
-        },
-        {
-            path:'/ticket/staff',
-            component:StaffWorkspace,
-            meta:{
-                requireAuth:true,
-                roles:['STAFF','ADMIN']
-            }
+            path:'/:pathMatch(.*)*',
+            component:NotFound
         }
     ]
 })
+
 router.beforeEach(
     async (to)=>{
 
     const userStore = useUserStore()
-    const userRoles = userStore.user?.role
 
     if (to.path === '/user/login'){
         if(userStore.user){
@@ -81,10 +109,17 @@ router.beforeEach(
 
         const token = localStorage.getItem('tokenValue')
         if (token){
-            const success = await userStore.restoreLogin()
+            
+            try{
+                const success = await userStore.restoreLogin()
 
-            if (success){
-                return '/'
+                if (success){
+                    return '/'
+                }
+            }catch{
+                    if(localStorage.getItem('tokenValue')){
+                    ElMessage.error('暂时无法验证登录状态，请稍后重试')
+                }
             }
         }
         return true
@@ -96,15 +131,23 @@ router.beforeEach(
 
     if(!userStore.user){
         const success = await userStore.restoreLogin()
-
-        if(!success){
-            return '/user/login'
+        try{
+            if(!success){
+                ElMessage.warning('请先登录')
+                return '/user/login'
+            }
+        }catch{
+            if(localStorage.getItem('tokenValue')){
+                ElMessage.error('暂时无法验证登录状态，请稍后重试')
+            }
         }
     }
 
     const roles = to.meta.roles as string[] | undefined
+    const userRoles = userStore.user?.role
     if(roles){
         if(!userRoles || !roles.includes(userRoles)){
+            ElMessage.warning('你没有访问该页面的权限')
             return '/'
         }
     }
