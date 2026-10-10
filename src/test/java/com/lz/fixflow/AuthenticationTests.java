@@ -68,29 +68,29 @@ class AuthenticationTests {
 
     private static Stream<Endpoint> roleEndpoints() {
         return Stream.of(
-                new Endpoint("GET", "/api/dashboard/", "", false),
+                new Endpoint("GET", "/api/dashboard", "", false),
                 new Endpoint("GET", "/api/ticket/open", "", false),
-                new Endpoint("GET", "/api/ticket/assign", "", false),
+                new Endpoint("GET", "/api/ticket/assigned", "", false),
                 new Endpoint("GET", "/api/ticket/manage", "", false),
                 new Endpoint("POST", "/api/ticket/ticket-id/handle", "", false),
                 new Endpoint("POST", "/api/ticket/ticket-id/resolve", "", false),
                 new Endpoint("POST", "/api/ticket/ticket-id/close", "", false),
                 new Endpoint("POST", "/api/ticket/ticket-id/assign", "{\"assignId\":\"staff-id\"}", true),
-                new Endpoint("GET", "/api/admin/user/staff", "", true),
-                new Endpoint("POST", "/api/admin/user/user-id/role", "{\"role\":\"STAFF\"}", true)
+                new Endpoint("GET", "/api/admin/staff", "", true),
+                new Endpoint("POST", "/api/admin/user-id/role", "{\"role\":\"STAFF\"}", true)
         );
     }
 
     private static Stream<Endpoint> loginOnlyEndpoints() {
         return Stream.of(
-                new Endpoint("GET", "/api/category/", "", false),
-                new Endpoint("GET", "/api/ticket/my", "", false),
+                new Endpoint("GET", "/api/category", "", false),
+                new Endpoint("GET", "/api/ticket/my-tickets", "", false),
                 new Endpoint("GET", "/api/ticket/ticket-id", "", false),
                 new Endpoint("POST", "/api/ticket/create",
                         "{\"title\":\"测试工单\",\"description\":\"测试描述\",\"categoryId\":1}", false),
                 new Endpoint("POST", "/api/ticket/ticket-id/reopen", "", false),
                 new Endpoint("POST", "/api/ticket/ticket-id/cancel", "", false),
-                new Endpoint("POST", "/api/ticket/ticket-id/detail", "", false),
+                new Endpoint("GET", "/api/ticket/ticket-id/detail", "", false),
                 new Endpoint("POST", "/api/ticket/ticket-id/comment", "{\"content\":\"测试评论\"}", false),
                 new Endpoint("GET", "/api/ticket/ticket-id/comment", "", false),
                 new Endpoint("GET", "/api/ticket/ticket-id/history", "", false)
@@ -168,7 +168,7 @@ class AuthenticationTests {
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"/api/ticket/my", "/api/ticket/open", "/api/admin/user/staff"})
+    @ValueSource(strings = {"/api/ticket/my-tickets", "/api/ticket/open", "/api/admin/staff"})
     void invalidTokensAreRejected(String path) throws Exception {
         mvc.perform(get(path).header(StpUtil.getTokenName(), "invalid-test-token"))
                 .andExpect(jsonPath("$.code").value(4010));
@@ -182,7 +182,7 @@ class AuthenticationTests {
         String token = login(account("ADMIN"));
         StpUtil.logoutByTokenValue(token);
 
-        mvc.perform(get("/api/admin/user/staff").header(StpUtil.getTokenName(), token))
+        mvc.perform(get("/api/admin/staff").header(StpUtil.getTokenName(), token))
                 .andExpect(jsonPath("$.code").value(4010));
 
         assertNoBusinessCalls();
@@ -197,6 +197,9 @@ class AuthenticationTests {
                 .andExpect(jsonPath("$.code").value(200));
 
         assertEquals(1, businessCallCount());
+        if ("/api/ticket/my-tickets".equals(endpoint.path())) {
+            verify(tickets).showTickets();
+        }
     }
 
     @ParameterizedTest
@@ -212,6 +215,9 @@ class AuthenticationTests {
         verify(users).selectById(user.getId());
         if (allowed) {
             assertEquals(1, businessCallCount());
+            if ("/api/ticket/assigned".equals(endpoint.path())) {
+                verify(tickets).getAssignedTickets();
+            }
         } else {
             assertNoBusinessCalls();
         }
@@ -223,7 +229,7 @@ class AuthenticationTests {
         String token = login(user);
         when(users.selectById(user.getId())).thenReturn(null);
 
-        mvc.perform(get("/api/admin/user/staff").header(StpUtil.getTokenName(), token))
+        mvc.perform(get("/api/admin/staff").header(StpUtil.getTokenName(), token))
                 .andExpect(jsonPath("$.code").value(4030));
 
         assertNoBusinessCalls();
@@ -233,13 +239,13 @@ class AuthenticationTests {
     void roleRevocationTakesEffectForExistingToken() throws Exception {
         User user = account("ADMIN");
         String token = login(user);
-        mvc.perform(get("/api/admin/user/staff").header(StpUtil.getTokenName(), token))
+        mvc.perform(get("/api/admin/staff").header(StpUtil.getTokenName(), token))
                 .andExpect(jsonPath("$.code").value(200));
         verify(userService).getStaffUsers();
         clearInvocations(userService);
 
         user.setRole("USER");
-        mvc.perform(get("/api/admin/user/staff").header(StpUtil.getTokenName(), token))
+        mvc.perform(get("/api/admin/staff").header(StpUtil.getTokenName(), token))
                 .andExpect(jsonPath("$.code").value(4030));
 
         assertNoBusinessCalls();
