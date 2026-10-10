@@ -107,9 +107,11 @@ onMounted(() => {
                 prop="categoryName" label="分类" width="120" 
                 />
 
-                <el-table-column 
-                prop="priority" label="优先级" width="100" 
-                />
+                <el-table-column label="优先级" width="110">
+                    <template #default="{ row }">
+                        <TicketPriorityTag :priority="row.priority" />
+                    </template>
+                </el-table-column>
 
                 <el-table-column 
                 label="操作" width="180"
@@ -162,11 +164,11 @@ onMounted(() => {
           width="120"
         />
 
-        <el-table-column
-          prop="status"
-          label="状态"
-          width="130"
-        />
+        <el-table-column label="状态" width="120">
+            <template #default="{ row }">
+                <TicketStatusTag :status="row.status" />
+            </template>
+        </el-table-column>
 
         <el-table-column
           label="操作"

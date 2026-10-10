@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ref, onMounted , computed } from 'vue';
+import { ref , computed, watch } from 'vue';
 import { useUserStore } from '../stores/user.ts';
-import { useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import { getTicketById } from '../api/ticket.ts'
 import type { TicketDetailVO } from '../api/ticket.ts'
@@ -13,12 +13,18 @@ import {
   handleTicket,
   reOpenTicket
 } from '../api/ticket'
+import TicketPriorityTag from '../component/TicketPriorityTag.vue';
+import TicketStatusTag from '../component/TicketStatusTag.vue';
+import { formatDateTime } from '../utils/ticketDisplay.ts';
+import { getRequestError } from '../utils/requestError.ts';
 
+const router = useRouter()
 const route = useRoute();
-const ticketId = route.params.id;
+const ticketId = computed(()=>route.params.id as string)
 const loading = ref(false);
 const actionLoading = ref(false);
 const detail = ref<TicketDetailVO | null>(null);
+const detailError = ref('')
 const commentLoading = ref(false);
 const comment = ref({ content: '' });
 const userStore = useUserStore()
@@ -76,16 +82,29 @@ async function loadTicketById() {
 
     loading.value = true;
 
+    detail.value = null
+    detailError.value = ''
+
     try {
-        const response = await getTicketById(ticketId as string);
-        if (response.data.code !== 200) {
-            ElMessage.error(response.data.message);
+        const ticketId = route.params.id as string
+        if(!ticketId){
+            detailError.value = '工单不存在'
+            return
+        }
+
+        const response = await getTicketById(ticketId);
+        const result = response.data
+
+        if (result.code !== 200) {
+            detailError.value = result.message || "无法获取工单详情"
             return;
         }
-        detail.value = response.data.data;
+
+        detail.value = result.data;
     }
     catch (error) {
-        ElMessage.error('获取工单详情失败');
+        detailError.value = getRequestError(error,"工单加载失败")
+        
     } finally {
         loading.value = false;
     }
@@ -101,7 +120,7 @@ async function handleAddComment() {
     commentLoading.value = true;
 
     try {
-        const response = await addComment(comment.value, ticketId as string);
+        const response = await addComment(comment.value, ticketId.value);
         if (response.data.code !== 200) {
             ElMessage.error(response.data.message);
             return;
@@ -129,7 +148,7 @@ async function handleCancel(){
     actionLoading.value = true;
 
     try{
-        const response = await cancelTicket(ticketId as string)
+        const response = await cancelTicket(ticketId.value)
         const result = response.data
         if(result.code!==200){
             ElMessage.error(result.message)
@@ -149,7 +168,7 @@ async function handleClaim(){
     actionLoading.value = true;
 
     try{
-        const response = await handleTicket(ticketId as string)
+        const response = await handleTicket(ticketId.value)
         const result = response.data
 
         if(result.code !== 200){
@@ -171,7 +190,7 @@ async function handleResolve(){
     actionLoading.value = true;
 
     try{
-        const response = await resolveTicket(ticketId as string )
+        const response = await resolveTicket(ticketId.value)
         const result = response.data
         
         if(result.code!== 200){
@@ -193,7 +212,7 @@ async function handleReopen(){
     actionLoading.value = true
 
     try{
-        const response = await reOpenTicket(ticketId as string)
+        const response = await reOpenTicket(ticketId.value)
         const result = response.data
 
         if(result.code!==200){
@@ -214,7 +233,7 @@ async function handleReopen(){
 async function handleClose(){
     actionLoading.value = true;
     try{
-        const response = await closeTicket(ticketId as string)
+        const response = await closeTicket(ticketId.value)
         const result = response.data
 
         if(result.code!== 200){
@@ -232,8 +251,14 @@ async function handleClose(){
     }
 }
 
-onMounted(
-    () => { loadTicketById() }
+watch(
+    ticketId,
+    ()=>{
+        loadTicketById()
+    },
+    {
+        immediate:true
+    }
 )
 </script>
 
@@ -245,6 +270,18 @@ onMounted(
             正在加载...
         </div>
 
+        <el-result
+            v-else-if="detailError"
+            icon="warning"
+            title="无法查看工单"
+            :sub-title="detailError"
+        >
+            <template #extra>
+                <el-button @click="router.push('/ticket/my-tickets')">
+                返回工单列表
+                </el-button>
+            </template>
+        </el-result>
 
         <div v-else-if="detail">
 
@@ -252,14 +289,17 @@ onMounted(
                 {{ detail.ticket.title }}
             </h2>
 
-            <p>
-                状态：
-                {{ detail.ticket.status }}
-            </p>
+            <div class="ticket-info">
+                <span>状态：</span>
+                    <TicketStatusTag :status="detail.ticket.status"/>
+
+                <span>优先级：</span>
+                    <TicketPriorityTag :priority="detail.ticket.priority"/>
+            </div>
 
             <p>
-                优先级：
-                {{ detail.ticket.priority }}
+                创建时间：
+                {{ formatDateTime(detail.ticket.createdAt) }}
             </p>
 
             <p>

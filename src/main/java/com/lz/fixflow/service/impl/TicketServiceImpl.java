@@ -4,6 +4,7 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import org.springframework.util.StringUtils;
 import com.lz.fixflow.annotation.Audit;
 import com.lz.fixflow.common.BusinessException;
 import com.lz.fixflow.common.PageResult;
@@ -508,17 +509,17 @@ public class TicketServiceImpl implements TicketService {
         Page<Ticket> page = new Page<>(dto.getCurrent(),pageSize);
         LambdaQueryWrapper<Ticket> wrapper = new LambdaQueryWrapper<>();
 
-        if(dto.getKeyword()!=null && !dto.getKeyword().isBlank()){
+        if(StringUtils.hasText(dto.getKeyword())){
 
             wrapper.like(Ticket::getTitle,dto.getKeyword());
         }
 
-        if(dto.getStatus()!=null && !dto.getStatus().isBlank()){
+        if(StringUtils.hasText(dto.getStatus())){
 
             wrapper.eq(Ticket::getStatus,dto.getStatus());
         }
 
-        if (dto.getPriority()!=null && !dto.getPriority().isBlank()){
+        if (StringUtils.hasText(dto.getPriority())){
 
             wrapper.eq(Ticket::getPriority,dto.getPriority());
         }

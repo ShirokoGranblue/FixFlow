@@ -19,8 +19,11 @@ import type {
 } from '../api/category'
 import { getStaffUsers } from '../api/user.ts'
 import type { UserVO } from '../api/user.ts'
-
 import { assignTicket } from '../api/ticket.ts'
+import TicketPriorityTag from '../component/TicketPriorityTag.vue'
+import TicketStatusTag from '../component/TicketStatusTag.vue'
+import { formatDateTime } from '../utils/ticketDisplay.ts'
+import { getRequestError } from '../utils/requestError.ts'
 
 const router = useRouter()
 const loading = ref(false)
@@ -36,7 +39,7 @@ const query = reactive(
         keyword: '',
         status: '',
         priority: '',
-        categoryId: undefined as number | undefined
+        categoryId: '' as number | ''
     }
 )
 const assignLoading = ref(false)
@@ -54,12 +57,13 @@ async function loadManageTickets() {
                 current: query.current,
                 pageSize: query.pageSize,
 
-                keyword: query.keyword || undefined,
+                keyword: query.keyword.trim() || undefined,
                 status: query.status || undefined,
                 priority: query.priority || undefined,
-                categoryId: query.categoryId
+                categoryId: typeof query.categoryId === 'number' ? query.categoryId : undefined
             }
         )
+        
         const result = response.data
 
         if (result.code !== 200) {
@@ -67,13 +71,13 @@ async function loadManageTickets() {
             return
         }
 
-        ticket.value = result.data.record
+        ticket.value = result.data.records
         total.value = result.data.total
         ElMessage.success("工单加载成功")
 
     } catch (error) {
 
-        ElMessage.error("工单加载失败")
+        ElMessage.error(getRequestError(error,"工单加载失败"))
     } finally {
 
         loading.value = false
@@ -161,7 +165,7 @@ async function handleReset() {
     query.keyword = ''
     query.status = ''
     query.priority = ''
-    query.categoryId = undefined
+    query.categoryId = ''
 
     loadManageTickets()
 }
@@ -207,6 +211,8 @@ onMounted(() => {
 
                 <el-select v-model="query.status" placeholder="全部状态" clearable>
 
+                    <el-option label="全部" value=""/>
+
                     <el-option label="待处理" value="OPEN" />
 
                     <el-option label="处理中" value="IN_PROGRESS" />
@@ -226,6 +232,8 @@ onMounted(() => {
 
                 <el-select v-model="query.priority" placeholder="全部优先级" clearable>
 
+                    <el-option label="全部" value=""/>
+
                     <el-option label="低" value="LOW" />
 
                     <el-option label="普通" value="MEDIUM" />
@@ -242,9 +250,17 @@ onMounted(() => {
             <el-form-item label="分类">
 
                 <el-select v-model="query.categoryId" placeholder="全部分类" clearable>
+                    
+                    <el-option
+                        label="全部"
+                        value=""
+                    />
 
-                    <el-option v-for="category in categories" :key="category.id" :label="category.name"
-                        :value="category.id" />
+                    <el-option v-for="category in categories" 
+                        :key="category.id" 
+                        :label="category.name"
+                        :value="category.id" 
+                    />
 
                 </el-select>
 
@@ -275,14 +291,23 @@ onMounted(() => {
 
             <el-table-column prop="categoryName" label="分类" width="120" />
 
+            <el-table-column label="优先级" width="110">
+                <template #default="{ row }">
+                    <TicketPriorityTag :priority="row.priority" />
+                </template>
+            </el-table-column>
 
-            <el-table-column prop="priority" label="优先级" width="110" />
+            <el-table-column label="状态" width="120">
+                <template #default="{ row }">
+                    <TicketStatusTag :status="row.status" />
+                </template>
+            </el-table-column>
 
-
-            <el-table-column prop="status" label="状态" width="130" />
-
-
-            <el-table-column prop="createdAt" label="创建时间" width="190" />
+            <el-table-column label="创建时间" width="180">
+                <template #default="{ row }">
+                    {{ formatDateTime(row.createdAt) }}
+                </template>
+            </el-table-column>
 
 
             <el-table-column label="操作" width="120">

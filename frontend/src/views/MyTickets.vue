@@ -3,6 +3,9 @@ import { ref, onMounted } from 'vue';
 import { getMyTickets } from '../api/ticket.ts';
 import type { TicketVO } from '../api/ticket.ts';
 import { useRouter } from 'vue-router';
+import TicketPriorityTag from '../component/TicketPriorityTag.vue'
+import TicketStatusTag from '../component/TicketStatusTag.vue'
+import { formatDateTime } from '../utils/ticketDisplay.ts'
 
 const router = useRouter();
 const tickets = ref<TicketVO[]>([]);
@@ -41,6 +44,7 @@ onMounted(() => {
         >
         新建工单
       </el-button>
+      
     <div v-if="loading">
       正在加载...
     </div>
@@ -60,16 +64,23 @@ onMounted(() => {
         <p>
           分类：{{ ticket.categoryName }}
         </p>
-        <p>
-          状态：{{ ticket.status }}
-        </p>
-        <p>
-          优先级：{{ ticket.priority }}
-        </p>
+
+          <div class="ticket-info">
+                <span>状态：</span>
+                    <TicketStatusTag :status="ticket.status"/>
+
+                <span>优先级：</span>
+                    <TicketPriorityTag :priority="ticket.priority"/>
+            </div>
+
+            <p>
+                创建时间：
+                {{ formatDateTime(ticket.createdAt) }}
+            </p>
+          </div>
       </div>
     </div>
 
-  </div>
 </template>
 
 <style scoped>

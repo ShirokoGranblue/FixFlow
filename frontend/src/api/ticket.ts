@@ -6,7 +6,7 @@ export interface TicketVO{
     id: number
     title : string
     description : string
-    priority : number
+    priority : string
     status : string
 
     creatorId : string
@@ -56,7 +56,7 @@ export interface TicketCommentDTO{
 }
 
 export interface PageResult<T>{
-    record:T[]
+    records:T[]
     total:number
     current:number
     pageSize:number
@@ -70,7 +70,7 @@ export interface TicketQuery{
     keyword?:string
     status?:string
     priority?:string
-    categoryId?:number
+    categoryId?:number | ''
 }
 
 export interface TicketAssignDTO{
