@@ -1,13 +1,9 @@
 package com.lz.fixflow.service.impl;
 
-import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lz.fixflow.annotation.Audit;
-import com.lz.fixflow.common.BusinessException;
 import com.lz.fixflow.entity.Ticket;
-import com.lz.fixflow.entity.User;
 import com.lz.fixflow.enums.TicketStatus;
-import com.lz.fixflow.enums.UserRole;
 import com.lz.fixflow.mapper.CategoryMapper;
 import com.lz.fixflow.mapper.TicketMapper;
 import com.lz.fixflow.mapper.UserMapper;
@@ -19,16 +15,13 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
 public class DashBoardServiceImpl implements DashBoardService {
 
     private final TicketMapper ticketMapper;
-    private final UserMapper userMapper;
     private final CategoryMapper categoryMapper;
-    private final PermissionService permissionService;
 
     @Override
     @Audit("管理人员查看了统计数据")

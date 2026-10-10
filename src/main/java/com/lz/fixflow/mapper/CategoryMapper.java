@@ -12,9 +12,14 @@ import java.util.Map;
 public interface CategoryMapper extends BaseMapper<Category> {
 
     @Select("""
-            SELECT category_id , COUNT(*) as count
-            FROM ticket
-            GROUP BY category_id
-            """)
+        SELECT
+            t.category_id AS categoryId,
+            c.name AS categoryName,
+            COUNT(*) AS count
+        FROM ticket t
+        LEFT JOIN category c
+            ON t.category_id = c.id
+        GROUP BY t.category_id, c.name
+    """)
     List<Map<String,Object>> countCategory();
 }
