@@ -32,4 +32,9 @@ public class UserController {
     public Result<UserVO> me(){
         return Result.success(userService.getCurrentUser());
     }
+
+    @PostMapping("/logout")
+    public Result<Void> logout(){
+        return Result.success(userService.logout());
+    }
 }

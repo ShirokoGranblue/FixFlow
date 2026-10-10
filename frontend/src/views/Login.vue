@@ -1,13 +1,13 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { onMounted, reactive, ref } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { login } from '../api/user'
 import { useUserStore } from '../stores/user.ts'
 
 const router = useRouter()
 const userStore = useUserStore()
-
+const route = useRoute()
 const loading = ref(false)
 
 const form = reactive({
@@ -16,6 +16,7 @@ const form = reactive({
 })
 
 async function handleLogin() {
+  
   if (!form.username || !form.password) {
     ElMessage.warning('请输入用户名和密码')
     return
@@ -51,6 +52,15 @@ async function handleLogin() {
     loading.value = false
   }
 
+onMounted(() => {
+    if (route.query.reason === 'session-expired') {
+        ElMessage.warning('登录状态已失效，请重新登录')
+
+        const query = { ...route.query }
+        delete query.reason
+        void router.replace({ query })
+    }
+})
 }
 </script>
 

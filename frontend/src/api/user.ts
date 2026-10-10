@@ -1,4 +1,5 @@
 import request from './request.ts'
+import type { PageResult } from './ticket.ts'
 
 export interface LoginForm {
     username: string
@@ -10,6 +11,18 @@ export interface UserVO {
     username: string
     email: string
     role: string
+    createdAt:string
+}
+
+export interface UserQueryDTO{
+    current:number
+    pageSize:number
+    keyword?:string
+    role?:string
+}
+
+export interface UserRoleUpdateDTO{
+    role:string
 }
 
 export interface LoginVO {
@@ -43,6 +56,12 @@ export function login(data: LoginForm) {
     )
 }
 
+export function logout(){
+    return request.post<Result<null>>(
+        '/user/logout'
+    )
+}
+
 export function register(data:RegisterDTO){
     return request.post<Result<UserVO>>(
         '/user/register',
@@ -52,6 +71,18 @@ export function register(data:RegisterDTO){
 
 export function getStaffUsers(){
     return request.get<Result<UserVO[]>>(
-        '/admin/user/staff'
+        '/admin/staff'
+    )
+}
+
+export function getUsers(params:UserQueryDTO){
+     return request.get<Result<PageResult<UserVO>>>(
+        '/admin/users' , {params}
+    )
+}
+
+export function updateUsers(id:string,params:UserRoleUpdateDTO){
+    return request.post<Result<UserVO>>(
+        `/admin/${id}/role`,params
     )
 }

@@ -1,10 +1,10 @@
 import { defineStore } from 'pinia'
-import {ref} from 'vue'
-import type {UserVO} from "../api/user.ts"
+import { ref } from 'vue'
+import type { UserVO } from "../api/user.ts"
 import { getCurrentUser } from "../api/user.ts"
+import { logout } from '../api/user.ts'
 
-export const useUserStore =
-    defineStore('user',()=>{
+export const useUserStore = defineStore('user',() => {
 
     const user = ref<UserVO | null>(null);
 
@@ -15,7 +15,7 @@ export const useUserStore =
         user.value = userInfo
     }
 
-    function logout(){
+    function clearLogin(){
         localStorage.removeItem('tokenName')
         localStorage.removeItem('tokenValue')
 
@@ -24,33 +24,35 @@ export const useUserStore =
 
     async function restoreLogin() {
 
-            const tokenValue =
-                localStorage.getItem('tokenValue')
+            const tokenValue = localStorage.getItem('tokenValue')
 
             if (!tokenValue) {
                 return false
             }
 
-            try {
                 const response = await getCurrentUser()
 
                 const result = response.data
 
                 if (result.code !== 200) {
-                    logout()
-                    return false
+                    throw new Error(result.message || '获取用户信息失败')
                 }
 
                 user.value = result.data
 
                 return true
-
-            } catch (error) {
-
-                logout()
-                return false
-            }
         }
 
-    return {user,setLogin,logout,restoreLogin}
+    async function setlogout(){
+
+        try{    
+
+            await logout()
+        }finally{
+
+            clearLogin()
+        }
+    }
+
+    return {user,setLogin,clearLogin,restoreLogin,setlogout}
 })

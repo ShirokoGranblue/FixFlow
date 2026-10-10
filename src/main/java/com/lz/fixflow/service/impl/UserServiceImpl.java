@@ -4,9 +4,12 @@ import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lz.fixflow.annotation.Audit;
 import com.lz.fixflow.common.BusinessException;
+import com.lz.fixflow.common.PageResult;
 import com.lz.fixflow.dto.UserLoginDTO;
+import com.lz.fixflow.dto.UserQueryDTO;
 import com.lz.fixflow.dto.UserRegisterDTO;
 import com.lz.fixflow.dto.UserRoleUpdateDTO;
 import com.lz.fixflow.entity.User;
@@ -19,6 +22,7 @@ import com.lz.fixflow.vo.UserVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -101,6 +105,13 @@ public class UserServiceImpl implements UserService {
         return vo;
     }
 
+    @Override 
+    @Audit("退出登录")
+    public Void logout(){
+        StpUtil.logout();
+        return null;
+    }
+
     @Override
     public UserVO getCurrentUser() {
 
@@ -133,6 +144,42 @@ public class UserServiceImpl implements UserService {
                 .toList();
     }
 
+    @Override 
+    public PageResult<UserVO> getUsers(UserQueryDTO dto){
+
+        long pageSize = Math.min(dto.getPageSize(), 100);
+
+        Page<User> page = new Page<>(dto.getCurrent(),pageSize);
+        User user = new User();
+
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<User>();
+
+        if (StringUtils.hasText(dto.getKeyword())) {
+            wrapper.like(User::getUsername,dto.getKeyword());
+        }
+
+        if(StringUtils.hasText(dto.getRole())){
+            wrapper.eq(User::getRole,dto.getRole());
+        }
+
+        wrapper.orderByDesc(User::getCreatedAt);
+        
+        Page<User> result = userMapper.selectPage(page, wrapper);
+        List<User> list = result.getRecords();
+
+        List<UserVO> users = list.stream()
+                                .map(this::convertToVO)
+                                .toList();
+
+        return new PageResult<>(
+                users,
+                result.getTotal(),
+                result.getCurrent(),
+                result.getSize(),
+                result.getPages()
+            );
+    }
+    
     @Override
     @Audit("修改用户角色")
     public UserVO updateRole(String id, UserRoleUpdateDTO dto){
