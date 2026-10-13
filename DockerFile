@@ -1,9 +1,21 @@
-FROM eclipse-temurin:21-jdk
+#先打包jar
+FROM maven:3.9-eclipse-temurin-21 AS build
+
+WORKDIR /build
+
+COPY pom.xml ./
+COPY src ./src
+
+RUN mvn -B -DskipTests package
+
+
+#构建jre环境并运行
+FROM eclipse-temurin:21-jre
 
 WORKDIR /app
 
-COPY target/*.jar app.jar
+COPY --from=build  /build/target/*.jar app.jar
 
 EXPOSE 8080
 
-ENTRYPOINT [ "java","-jar","app.jar" ]
+ENTRYPOINT [ "java", "-jar" , "/app/app.jar" , "--spring.profiles.active=docker" ]

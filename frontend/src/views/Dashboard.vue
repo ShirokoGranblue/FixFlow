@@ -1,14 +1,12 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus';
 import { getDashboard } from '../api/dashboard';
-import { reactive, ref } from 'vue';
+import { ref } from 'vue';
 import { onMounted } from 'vue';
-import { useRouter } from 'vue-router';
 import type { DashBoardVO } from '../api/dashboard.ts';
 import { getRequestError } from '../utils/requestError.ts';
 
 const loading = ref(false)
-const router = useRouter()
 const dashboard = ref<DashBoardVO|null>(null)
 
 async function loadDashboard(){
