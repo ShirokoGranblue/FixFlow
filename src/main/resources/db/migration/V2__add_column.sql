@@ -1,0 +1,1 @@
+alter Table audit_log add COLUMN upd INT NOT NULL DEFAULT 0;
