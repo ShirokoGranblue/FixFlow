@@ -17,6 +17,7 @@ import com.lz.fixflow.enums.TicketStatus;
 import com.lz.fixflow.enums.UserRole;
 import com.lz.fixflow.mapper.*;
 import com.lz.fixflow.service.PermissionService;
+import com.lz.fixflow.service.TicketHistoryService;
 import com.lz.fixflow.service.TicketService;
 import com.lz.fixflow.vo.TicketCommentVO;
 import com.lz.fixflow.vo.TicketDetailVO;
@@ -24,6 +25,7 @@ import com.lz.fixflow.vo.TicketHistoryVO;
 import com.lz.fixflow.vo.TicketVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
@@ -40,6 +42,7 @@ public class TicketServiceImpl implements TicketService {
     private final TicketHistoryMapper ticketHistoryMapper;
     private final CategoryMapper categoryMapper;
     private final PermissionService permissionService;
+    private final TicketHistoryService ticketHistoryService;
 
     private TicketVO convertToVO(Ticket entity,Category category) {
 
@@ -114,26 +117,6 @@ public class TicketServiceImpl implements TicketService {
 
         return vo;
     }
-    private void recordHistory(
-            String ticketid,
-            String operatorid,
-            String action,
-            String fromStatus,
-            String toStatus
-    ) {
-
-        TicketHistory ticketHistory = new TicketHistory();
-
-        ticketHistory.setId(UUID.randomUUID().toString());
-        ticketHistory.setTicketId(ticketid);
-        ticketHistory.setOperatorId(operatorid);
-        ticketHistory.setAction(action);
-        ticketHistory.setFromStatus(fromStatus);
-        ticketHistory.setToStatus(toStatus);
-        ticketHistory.setCreatedAt(LocalDateTime.now());
-
-        ticketHistoryMapper.insert(ticketHistory);
-    }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -163,7 +146,7 @@ public class TicketServiceImpl implements TicketService {
 
         ticketMapper.insert(ticket);
 
-        recordHistory(
+        ticketHistoryService.recordHistory(
                 ticket.getId(),
                 userid,
                 TicketAction.CREATE.getValue(),
@@ -199,7 +182,7 @@ public class TicketServiceImpl implements TicketService {
             throw new BusinessException("工单已经取消或不存在");
         }
 
-        recordHistory(
+        ticketHistoryService.recordHistory(
                 id,
                 userid,
                 TicketAction.CANCEL.getValue(),
@@ -239,7 +222,7 @@ public class TicketServiceImpl implements TicketService {
             throw new BusinessException("工单已重新提交或工单不存在");
         }
 
-        recordHistory(
+        ticketHistoryService.recordHistory(
                 id,
                 userid,
                 TicketAction.REOPEN.getValue(),
@@ -340,7 +323,7 @@ public class TicketServiceImpl implements TicketService {
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    @Audit("工单被接取")
+    @Audit("工单已受理")
     public TicketVO handleTicket(String id) {
 
         String userid = StpUtil.getLoginIdAsString();
@@ -359,16 +342,15 @@ public class TicketServiceImpl implements TicketService {
         }
 
         Ticket ticket = ticketMapper.selectById(id);
+        Category category = categoryMapper.selectById(ticket.getCategoryId());
 
-        recordHistory(
+        ticketHistoryService.recordHistory(
                 id,
                 userid,
                 TicketAction.HANDLE.getValue(),
                 TicketStatus.OPEN.getValue(),
                 TicketStatus.IN_PROGRESS.getValue()
         );
-
-        Category category = categoryMapper.selectById(ticket.getCategoryId());
 
         return convertToVO(ticket,category);
     }
@@ -433,7 +415,7 @@ public class TicketServiceImpl implements TicketService {
 
         Ticket ticket = ticketMapper.selectById(id);
 
-        recordHistory(
+        ticketHistoryService.recordHistory(
                 id,
                 userid,
                 TicketAction.RESOLVE.getValue(),
@@ -452,23 +434,28 @@ public class TicketServiceImpl implements TicketService {
     public TicketVO closeTicket(String id) {
 
         String userid = StpUtil.getLoginIdAsString();
+        User user  = userMapper.selectById(userid);
 
-        int row = ticketMapper.update(null,
+        if (user==null) {
+            throw new BusinessException("用户不存在");
+        }
+
+            int row = ticketMapper.update(null,
                 new LambdaUpdateWrapper<Ticket>()
                         .eq(Ticket::getId,id)
                         .eq(Ticket::getStatus,TicketStatus.RESOLVED.getValue())
                         .eq(Ticket::getAssigneeId,userid)
                         .set(Ticket::getStatus,TicketStatus.CLOSED.getValue())
                         .set(Ticket::getUpdatedAt,LocalDateTime.now())
-        );
+            );
 
         if(row == 0){
-            throw  new BusinessException("工单不存在或当前状态无法关闭");
+            throw new BusinessException("工单不存在或当前状态无法关闭");
         }
 
         Ticket ticket = ticketMapper.selectById(id);
 
-        recordHistory(
+        ticketHistoryService.recordHistory(
                 id,
                 userid,
                 TicketAction.CLOSE.getValue(),
@@ -612,7 +599,7 @@ public class TicketServiceImpl implements TicketService {
             throw new BusinessException("工单不存在或已被处理");
         }
 
-        recordHistory(
+        ticketHistoryService.recordHistory(
                 id,
                 userid,
                 TicketAction.ASSIGN.getValue(),

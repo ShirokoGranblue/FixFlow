@@ -12,6 +12,7 @@ import com.lz.fixflow.dto.TicketQueryDTO;
 import com.lz.fixflow.entity.Ticket;
 import com.lz.fixflow.entity.User;
 import com.lz.fixflow.mapper.*;
+import com.lz.fixflow.service.TicketHistoryService;
 import com.lz.fixflow.service.impl.PermissionServiceImpl;
 import com.lz.fixflow.service.impl.TicketServiceImpl;
 import com.lz.fixflow.service.impl.UserServiceImpl;
@@ -39,10 +40,11 @@ class TicketLogicTests {
     private final UserMapper users = mock(UserMapper.class);
     private final CategoryMapper categories = mock(CategoryMapper.class);
     private final TicketHistoryMapper histories = mock(TicketHistoryMapper.class);
+    private final TicketHistoryService historyService = mock(TicketHistoryService.class);
     private final Map<String, User> accounts = new HashMap<>();
     private final PermissionServiceImpl permissions = new PermissionServiceImpl(users);
     private final TicketServiceImpl service = new TicketServiceImpl(
-            tickets, mock(TicketCommentMapper.class), users, histories, categories, permissions);
+            tickets, mock(TicketCommentMapper.class),users, histories, categories, permissions,historyService);
     private final Ticket ticket = new Ticket();
     private StpLogic originalLogic;
     private String actor = "admin";
@@ -94,7 +96,7 @@ class TicketLogicTests {
 
         assertEquals(ticket.getId(), service.assignTicket(ticket.getId(), dto).getId());
         verify(tickets).update(isNull(), any(Wrapper.class));
-        verify(histories).insert(any(com.lz.fixflow.entity.TicketHistory.class));
+        verify(historyService).recordHistory(ticket.getId(), "admin", "ASSIGN", "OPEN", "IN_PROGRESS");
     }
 
     @ParameterizedTest
@@ -106,7 +108,7 @@ class TicketLogicTests {
 
         assertThrows(BusinessException.class, () -> service.assignTicket(ticket.getId(), dto));
         verify(tickets, never()).update(isNull(), any(Wrapper.class));
-        verifyNoInteractions(histories);
+        verifyNoInteractions(historyService, histories);
     }
 
     @ParameterizedTest

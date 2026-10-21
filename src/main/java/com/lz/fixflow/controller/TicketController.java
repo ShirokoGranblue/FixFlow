@@ -73,7 +73,7 @@ public class TicketController {
     }
 
     @PostMapping("/{id}/close")
-    @SaCheckRole(value = {"STAFF","ADMIN"},mode = SaMode.OR)
+    @SaCheckRole(value = {"STAFF"},mode = SaMode.OR)
     public Result<TicketVO> closeTicket(@PathVariable String id) {
         return Result.success(ticketService.closeTicket(id));
     }

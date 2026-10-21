@@ -208,6 +208,9 @@ class AuthenticationTests {
         User user = account(role);
         String token = login(user);
         boolean allowed = "ADMIN".equals(role) || ("STAFF".equals(role) && !endpoint.adminOnly());
+        if ("/api/ticket/ticket-id/close".equals(endpoint.path())) {
+            allowed = "STAFF".equals(role);
+        }
 
         mvc.perform(endpoint.toRequest().header(StpUtil.getTokenName(), token))
                 .andExpect(jsonPath("$.code").value(allowed ? 200 : 4030));
