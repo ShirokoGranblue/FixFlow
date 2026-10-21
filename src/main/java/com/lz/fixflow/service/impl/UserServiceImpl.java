@@ -79,12 +79,10 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Audit("用户登录")
-    public LoginVO login(UserLoginDTO dto)
-    {
-        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+    public LoginVO login(UserLoginDTO dto){
 
-        User user = userMapper.selectOne(
-                wrapper.eq(User::getUsername , dto.getUsername())
+        User user = userMapper.selectOne(new LambdaQueryWrapper<User>()
+                    .eq(User::getUsername , dto.getUsername())
         );
 
         if(user==null){
