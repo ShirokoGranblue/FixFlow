@@ -99,4 +99,14 @@ FixFlow 是一个基于 Spring Boot 和 Vue 3 开发的前后端分离工单管�
 
 本项目采用前后端分离架构，开发环境通过 Vite 代理访问 Spring Boot，容器化部署后由 Nginx 统一提供访问入口。
 
+### 审计日志来源 IP
+
+当前部署链路为浏览器 → Nginx → 后端。Nginx 使用连接来源地址覆盖 `X-Forwarded-For`，后端通过 Tomcat 原生转发处理，使审计日志中的 `request.getRemoteAddr()` 返回用户来源地址。Vite 开发代理同样覆盖此请求头。
+
+本地配置仅信任回环代理；Docker 配置信任私网代理，因此后端必须保持仅在 Compose 内网可访问，不应发布 8080 端口到公网。若增加 CDN 或其他前置代理，需要重新配置可信代理链。本机访问仍可能记录 `::1` 或 `127.0.0.1`；历史日志不会被改写。
+
+更新后执行 `docker compose up -d --build --no-deps frontend backend` 重建这两个服务。本地开发需要重启后端和 Vite。
+
+来源地址回归测试：`mvn '-Dtest=ClientIpTests,UntrustedClientIpTests' test`。
+
 工单状态变化通过后端业务规则校验，前端角色菜单仅负责用户体验，不作为真正的权限安全边界。

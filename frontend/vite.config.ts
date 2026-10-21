@@ -10,7 +10,15 @@ export default defineConfig({
         proxy: {
             '/api': {
                 target: 'http://localhost:8080',
-                changeOrigin: true
+                changeOrigin: true,
+                configure(proxy) {
+                    proxy.on('proxyReq', (proxyReq, req) => {
+                        proxyReq.removeHeader('X-Forwarded-For')
+                        if (req.socket.remoteAddress) {
+                            proxyReq.setHeader('X-Forwarded-For', req.socket.remoteAddress)
+                        }
+                    })
+                }
             }
         }
     }

@@ -2,27 +2,28 @@ package com.lz.fixflow.aspect;
 
 import cn.dev33.satoken.stp.StpUtil;
 import com.lz.fixflow.annotation.Audit;
-import com.lz.fixflow.entity.AuditLog;
-import com.lz.fixflow.mapper.AuditLogMapper;
+import com.lz.fixflow.service.AuditLogService;
+
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.Around;
 import org.aspectj.lang.annotation.Aspect;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 
-import java.time.LocalDateTime;
-
 @Slf4j
 @Aspect
 @Component
+@Order(0)
 @RequiredArgsConstructor
 public class AuditAspect {
 
-    private final AuditLogMapper auditLogMapper;
+    private final AuditLogService auditLogService;
 
     @Around("@annotation(audit)")
     public Object Around(
@@ -36,66 +37,41 @@ public class AuditAspect {
         }
 
         ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if (attributes==null) {
+            throw new IllegalStateException("HTTP 请求上下文不存在");
+        }
         HttpServletRequest request = attributes.getRequest();
 
+        Object result;
         try{
-
-            Object result = joinPoint.proceed();
-            saveLog(
-                    userid,
-                    audit.value(),
-                    true,
-                    null,
-                    System.currentTimeMillis()-start,
-                    getIp(request),
-                    joinPoint
-            );
-
-            return result;
+            result = joinPoint.proceed();
 
         }catch(Throwable e){
-
-            saveLog(
-                    userid,
-                    audit.value(),
-                    false,
-                    e.getMessage(),
-                    System.currentTimeMillis()-start,
-                    getIp(request),
-                    joinPoint
+            auditLogService.saveLog(
+                userid,
+                audit.value(),
+                false,
+                e.getMessage(),
+                System.currentTimeMillis()-start,
+                getIp(request),
+                joinPoint
             );
             throw e;
         }
+        auditLogService.saveLog(
+            userid,
+            audit.value(),
+            true,
+            null,
+            System.currentTimeMillis()-start,
+            getIp(request),
+            joinPoint
+        );
+
+        return result;
     }
 
-    private void saveLog(String userid,
-                         String action,
-                         boolean success,
-                         String errorMessage,
-                         long durationMs,
-                         String ip,
-                         ProceedingJoinPoint joinPoint) {
-        try {
-            AuditLog log = new AuditLog();
-
-            log.setUserId(userid);
-            log.setAction(action);
-            log.setSuccess(success);
-            log.setErrorMessage(errorMessage);
-            log.setDurationMs(durationMs);
-            log.setCreatedAt(LocalDateTime.now());
-            log.setIp(ip);
-
-            log.setMethod(joinPoint.getSignature().toShortString());
-
-            auditLogMapper.insert(log);
-
-        }catch (Exception e){
-            log.error(e.getMessage());
-        }
-    }
-
-    private String getIp(HttpServletRequest request) {
+    public static String getIp(HttpServletRequest request) {
         return request.getRemoteAddr();
     }
 }

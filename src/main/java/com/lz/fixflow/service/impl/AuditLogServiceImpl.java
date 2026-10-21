@@ -7,8 +7,16 @@ import com.lz.fixflow.entity.AuditLog;
 import com.lz.fixflow.mapper.AuditLogMapper;
 import com.lz.fixflow.service.AuditLogService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
+import lombok.extern.slf4j.Slf4j;
 
+import java.time.LocalDateTime;
+
+import org.aspectj.lang.ProceedingJoinPoint;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
+
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AuditLogServiceImpl implements AuditLogService {
@@ -35,4 +43,32 @@ public class AuditLogServiceImpl implements AuditLogService {
         );
     }
 
+    @Override
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void saveLog(String userid,
+                         String action,
+                         boolean success,
+                         String errorMessage,
+                         long durationMs,
+                         String ip,
+                         ProceedingJoinPoint joinPoint){
+        try {
+            AuditLog log = new AuditLog();
+
+            log.setUserId(userid);
+            log.setAction(action);
+            log.setSuccess(success);
+            log.setErrorMessage(errorMessage);
+            log.setDurationMs(durationMs);
+            log.setCreatedAt(LocalDateTime.now());
+            log.setIp(ip);
+
+            log.setMethod(joinPoint.getSignature().toShortString());
+
+            auditLogMapper.insert(log);
+
+        }catch (Exception e){
+            log.error(e.getMessage());
+        }
+    }
 }

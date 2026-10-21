@@ -14,8 +14,6 @@ public class AuditLog {
     @TableId
     private Long id;
 
-    private String ip;
-
     @TableField("user_id")
     private String userId;
 
@@ -25,4 +23,5 @@ public class AuditLog {
     private String errorMessage;
     private Long durationMs;
     private LocalDateTime createdAt;
+    private String ip;
 }
