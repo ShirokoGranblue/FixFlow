@@ -35,3 +35,7 @@ build/
 .env
 .env.*
 !.env.example
+
+# Local Docker build proxy settings
+/docker-compose.override.yml
+/docker/maven/settings.local.xml

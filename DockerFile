@@ -6,7 +6,9 @@ WORKDIR /build
 COPY pom.xml ./
 COPY src ./src
 
-RUN mvn -B -DskipTests package
+RUN --mount=type=cache,target=/root/.m2/repository \
+    --mount=type=secret,id=maven_settings,target=/root/.m2/settings.xml \
+    mvn -B -Dmaven.test.skip=true package
 
 
 #构建jre环境并运行
