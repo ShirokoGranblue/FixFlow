@@ -79,7 +79,7 @@ onMounted(
 
 <template>
 
-  <div class="page">
+  <div class="page create-ticket-page">
 
     <h2>提交工单</h2>
 

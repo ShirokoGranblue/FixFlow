@@ -153,15 +153,11 @@ onMounted(()=>{
 
 <style scoped>
 
-.page {
-  padding: 24px;
-}
-
 .stats {
   display: grid;
 
   grid-template-columns:
-    repeat(3, 1fr);
+    repeat(3, minmax(0, 1fr));
 
   gap: 16px;
 
@@ -169,23 +165,43 @@ onMounted(()=>{
 }
 
 .stat-card {
-  text-align: center;
+  text-align: left;
+}
+
+.stat-card :deep(.el-card__body) {
+  padding: 24px;
 }
 
 .stat-title {
   font-size: 14px;
-  color: #666;
+  color: var(--ui-muted);
 }
 
 .stat-value {
-  margin-top: 12px;
+  margin-top: 16px;
 
-  font-size: 32px;
-  font-weight: bold;
+  font-size: 36px;
+  font-weight: 650;
+  line-height: 1.2;
+  letter-spacing: -1px;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
 }
 
+.stat-card:first-child { background: var(--el-color-primary-light-9); border-color: var(--el-color-primary-light-8); }
+.stat-card:first-child .stat-value { color: var(--el-color-primary); }
+
 .section {
-  margin-top: 24px;
+  margin-top: 32px;
+}
+
+@media (max-width: 900px) {
+  .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 600px) {
+  .stats { gap: 12px; }
+  .stat-card :deep(.el-card__body) { padding: 20px 16px; }
+  .stat-value { font-size: 30px; }
 }
 
 </style>

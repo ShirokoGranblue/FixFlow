@@ -69,7 +69,10 @@ onMounted(() => {
 
     <el-card class="login-card">
 
-      <h2>FixFlow</h2>
+      <div class="auth-heading">
+        <span class="auth-mark" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" focusable="false"><rect x="4" y="3" width="16" height="18" rx="3"/><path d="m8 12 3 3 5-6"/></svg></span>
+        <h2>FixFlow</h2>
+      </div>
 
       <el-form :model="form">
 
@@ -109,16 +112,3 @@ onMounted(() => {
 
   </div>
 </template>
-
-<style scoped>
-.login-page {
-  height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.login-card {
-  width: 400px;
-}
-</style>

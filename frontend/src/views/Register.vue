@@ -64,7 +64,10 @@ async function handleRegister(){
 
     <el-card class="register-card">
 
-      <h2>注册 FixFlow</h2>
+      <div class="auth-heading">
+        <span class="auth-mark" aria-hidden="true"><svg class="ui-icon" viewBox="0 0 24 24" focusable="false"><circle cx="9" cy="8" r="3"/><path d="M3 21v-2a6 6 0 0 1 12 0v2M19 8v6M16 11h6"/></svg></span>
+        <h2>注册 FixFlow</h2>
+      </div>
 
       <el-form
         :model="form"
@@ -138,16 +141,3 @@ async function handleRegister(){
   </div>
 
 </template>
-
-<style scoped>
-.register-page {
-  height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.register-card {
-  width: 420px;
-}
-</style>

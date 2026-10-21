@@ -264,9 +264,9 @@ watch(
 
 <template>
 
-    <div class="page">
+    <div class="page ticket-detail-page">
 
-        <div v-if="loading">
+        <div v-if="loading" class="empty-state">
             正在加载...
         </div>
 
@@ -426,24 +426,32 @@ watch(
 </template>
 
 <style scoped>
-.page {
-    max-width: 900px;
+.page.ticket-detail-page {
+    max-width: 1000px;
     margin: 0 auto;
-    padding: 24px;
+    padding: 0;
 }
+
+.ticket-detail-page > div > p { color: var(--ui-muted); }
+.ticket-detail-page > div > p:last-of-type { padding: 24px; color: var(--el-text-color-primary); background: var(--ui-surface); border: 1px solid var(--ui-border); border-radius: 12px; white-space: pre-wrap; }
 
 .section {
     margin-bottom: 24px;
-    padding: 20px;
+    padding: 24px;
 
-    border: 1px solid #ddd;
-    border-radius: 8px;
+    background: var(--ui-surface);
+    border: 1px solid var(--ui-border);
+    border-radius: 12px;
+    box-shadow: var(--ui-shadow);
 }
 
 .comment {
-    padding: 12px 0;
-    border-bottom: 1px solid #eee;
+    padding: 20px 0;
+    border-bottom: 1px solid var(--ui-border);
 }
+.comment:last-child { border-bottom: 0; padding-bottom: 0; }
+.comment p { margin: 8px 0; white-space: pre-wrap; }
+.comment small { color: var(--ui-muted); font-variant-numeric: tabular-nums; }
 
 .comment-form {
   margin-bottom: 24px;
@@ -455,8 +463,19 @@ watch(
 
 .history-item {
     display: flex;
-    gap: 20px;
+    flex-wrap: wrap;
+    gap: 8px 20px;
+    color: var(--ui-muted);
+    overflow-wrap: anywhere;
 
-    padding: 8px 0;
+    padding: 14px 0;
+    border-bottom: 1px solid var(--ui-border);
+}
+.history-item strong { color: var(--el-text-color-primary); }
+.history-item:last-child { border-bottom: 0; }
+.actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 24px; }
+.actions .el-button { margin-left: 0; }
+@media (max-width: 600px) {
+    .section { padding: 20px 16px; }
 }
 </style>

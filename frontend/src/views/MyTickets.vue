@@ -36,20 +36,23 @@ onMounted(() => {
 <template>
   <div class="page">
 
-    <h2>我的工单</h2>
+    <div class="page-heading">
+      <h2>我的工单</h2>
 
       <el-button
         type="primary"
         @click="router.push('/ticket/create')"
         >
+        <svg class="ui-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M12 5v14M5 12h14"/></svg>
         新建工单
       </el-button>
+    </div>
       
-    <div v-if="loading">
+    <div v-if="loading" class="empty-state">
       正在加载...
     </div>
     
-    <div v-else-if="tickets.length === 0">
+    <div v-else-if="tickets.length === 0" class="empty-state">
       暂无工单
     </div>
 
@@ -84,15 +87,22 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.page {
-  padding: 24px;
-}
-
 .ticket-item {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px 24px;
   margin-bottom: 16px;
-  padding: 16px;
+  padding: 24px;
 
-  border: 1px solid #ddd;
-  border-radius: 8px;
+  background: var(--ui-surface);
+  border: 1px solid var(--ui-border);
+  border-radius: 12px;
+  box-shadow: var(--ui-shadow);
+}
+.ticket-item > .el-button { grid-column: 2; grid-row: 1; }
+.ticket-item h3 { grid-column: 1; grid-row: 1; margin: 0; align-self: center; font-size: 17px; }
+.ticket-item p, .ticket-info { grid-column: 1 / -1; margin: 0; color: var(--ui-muted); }
+@media (max-width: 600px) {
+  .ticket-item { padding: 20px; gap: 12px; }
 }
 </style>
