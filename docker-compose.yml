@@ -12,7 +12,6 @@ services:
 
     volumes:
       - mysql-data:/var/lib/mysql
-      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
 
     healthcheck:
       test:
@@ -47,7 +46,7 @@ services:
     restart: unless-stopped
 
     ports:
-      - "80:80"
+      - "127.0.0.1:8081:80"
 
     depends_on:
       - backend

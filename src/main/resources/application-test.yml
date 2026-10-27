@@ -4,7 +4,7 @@ spring:
   datasource:
     url: jdbc:mysql://127.0.0.1:3307/fixflow_test?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
     username: fixflow_test
-    password: ${FIXFLOW_TEST_DB_PASSWORD}
+    password: ${MYSQL_PASSWORD}
   flyway:
     enabled: false
     baseline-on-migrate: false

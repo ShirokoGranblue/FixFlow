@@ -77,7 +77,7 @@ FixFlow 是一个基于 Spring Boot 和 Vue 3 开发的前后端分离工单管�
 3. 设置数据库管理员密码和业务用户密码。
 4. 执行 `docker compose up -d --build`。
 5. 执行 `docker compose ps` 检查容器状态。
-6. 浏览器访问 `http://localhost:8088`。
+6. 浏览器访问 `http://localhost`。
 
 **常用命令**
 

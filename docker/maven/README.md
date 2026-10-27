@@ -30,7 +30,7 @@ secrets:
             <active>true</active>
             <protocol>http</protocol>
             <host>host.docker.internal</host>
-            <port>10808</port>
+            <port>7897</port>
             <nonProxyHosts>localhost|127.*</nonProxyHosts>
         </proxy>
     </proxies>
@@ -42,8 +42,8 @@ secrets:
 以上两个本地文件均已加入 `.gitignore`。保持本机代理运行，然后在项目根目录执行：
 
 ```powershell
-$env:HTTP_PROXY = 'http://127.0.0.1:10808'
-$env:HTTPS_PROXY = 'http://127.0.0.1:10808'
+$env:HTTP_PROXY = 'http://127.0.0.1:7897'
+$env:HTTPS_PROXY = 'http://127.0.0.1:7897'
 docker compose config --quiet
 docker compose up -d --build
 ```
