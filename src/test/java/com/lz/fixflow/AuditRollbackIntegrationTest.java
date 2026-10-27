@@ -43,6 +43,7 @@ class AuditRollbackIntegrationTest {
 
     private String ticketId;
     private String staffId;
+    private String creatorId;
     private Long categoryId;
     private StpLogic originalLogic;
     private boolean databaseVerified;
@@ -62,6 +63,14 @@ class AuditRollbackIntegrationTest {
 
         ticketId = UUID.randomUUID().toString();
         staffId = UUID.randomUUID().toString();
+        creatorId = UUID.randomUUID().toString();
+        jdbc.update("""
+                INSERT INTO `user` (id, username, password, email, role)
+                VALUES (?, ?, 'unused-test-password', ?, 'STAFF'),
+                       (?, ?, 'unused-test-password', ?, 'USER')
+                """,
+                staffId, "staff-" + staffId, staffId + "@example.test",
+                creatorId, "creator-" + creatorId, creatorId + "@example.test");
         jdbc.update("""
                 INSERT INTO ticket
                     (id, title, description, priority, status, creator_id, category_id)
@@ -72,7 +81,7 @@ class AuditRollbackIntegrationTest {
                 "验证业务回滚后失败审计仍保留",
                 "MEDIUM",
                 TicketStatus.OPEN.getValue(),
-                UUID.randomUUID().toString(),
+                creatorId,
                 categoryId
             );
 
@@ -122,6 +131,10 @@ class AuditRollbackIntegrationTest {
                 WHERE user_id = ? AND action = ? AND success = 0
                 """, Long.class, staffId, "工单已受理");
         assertEquals(1L, auditCount);
+        assertEquals("staff-" + staffId, jdbc.queryForObject("""
+                SELECT username FROM audit_log
+                WHERE user_id = ? AND action = ? AND success = 0
+                """, String.class, staffId, "工单已受理"));
 
         String errorMessage = jdbc.queryForObject("""
                 SELECT error_message FROM audit_log
@@ -143,6 +156,12 @@ class AuditRollbackIntegrationTest {
                 }
                 if (categoryId != null) {
                     jdbc.update("DELETE FROM category WHERE id = ?", categoryId);
+                }
+                if (staffId != null) {
+                    jdbc.update("DELETE FROM `user` WHERE id = ?", staffId);
+                }
+                if (creatorId != null) {
+                    jdbc.update("DELETE FROM `user` WHERE id = ?", creatorId);
                 }
             }
         } finally {

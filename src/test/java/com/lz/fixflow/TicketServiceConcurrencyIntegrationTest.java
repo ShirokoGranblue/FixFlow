@@ -52,13 +52,19 @@ class TicketServiceConcurrencyIntegrationTest {
     private StpLogic originalLogic;
 
     private String ticketId;
+    private String creatorId;
     private Long categoryId;
+    private boolean databaseVerified;
 
     private String staffA;
     private String staffB;
 
     @BeforeEach
     void prepare() {
+        assertEquals("fixflow_test",
+                jdbc.queryForObject("SELECT DATABASE()", String.class));
+        databaseVerified = true;
+
         // 1. 为每个测试建立独立数据，避免和其他测试互相干扰。
         String categoryName = "it-" + UUID.randomUUID();
         jdbc.update("INSERT INTO category (name) VALUES (?)", categoryName);
@@ -68,12 +74,22 @@ class TicketServiceConcurrencyIntegrationTest {
         ticketId = UUID.randomUUID().toString();
         staffA = UUID.randomUUID().toString();
         staffB = UUID.randomUUID().toString();
+        creatorId = UUID.randomUUID().toString();
+        jdbc.update("""
+                INSERT INTO `user` (id, username, password, email, role)
+                VALUES (?, ?, 'unused-test-password', ?, 'STAFF'),
+                       (?, ?, 'unused-test-password', ?, 'STAFF'),
+                       (?, ?, 'unused-test-password', ?, 'USER')
+                """,
+                staffA, "staff-" + staffA, staffA + "@example.test",
+                staffB, "staff-" + staffB, staffB + "@example.test",
+                creatorId, "creator-" + creatorId, creatorId + "@example.test");
         jdbc.update("""
                 INSERT INTO ticket (id, title, description, priority, status, creator_id, category_id)
                 VALUES (?, ?, ?, ?, ?, ?, ?)
                 """,
                 ticketId, "并发接单集成测试", "两个STAFF同时尝试接单", "MEDIUM",
-                TicketStatus.OPEN.getValue(), UUID.randomUUID().toString(), categoryId);
+                TicketStatus.OPEN.getValue(), creatorId, categoryId);
 
         // 2. Service 通过 StpUtil.getLoginIdAsString() 获取当前人。
         // 不同线程从 ThreadLocal 取自己的 ID，不能使用单个全局固定 ID。
@@ -93,6 +109,9 @@ class TicketServiceConcurrencyIntegrationTest {
     @AfterEach
     void clean() {
         try {
+            if (!databaseVerified) {
+                return;
+            }
             if (ticketId != null) {
                 jdbc.update("DELETE FROM ticket_history WHERE ticket_id = ?", ticketId);
                 jdbc.update("DELETE FROM ticket WHERE id = ?", ticketId);
@@ -102,6 +121,10 @@ class TicketServiceConcurrencyIntegrationTest {
             }
             if (staffA != null && staffB != null) {
                 jdbc.update("DELETE FROM audit_log WHERE user_id IN (?, ?)", staffA, staffB);
+                jdbc.update("DELETE FROM `user` WHERE id IN (?, ?)", staffA, staffB);
+            }
+            if (creatorId != null) {
+                jdbc.update("DELETE FROM `user` WHERE id = ?", creatorId);
             }
         } finally {
             if (originalLogic != null)
@@ -136,6 +159,7 @@ class TicketServiceConcurrencyIntegrationTest {
                     // 真正调用 Spring 管理的 Service，不是直接调用 Mapper
                     TicketVO result = ticketService.handleTicket(ticketId);
                     assertEquals(staffId, result.getAssigneeId());
+                    assertEquals("creator-" + creatorId, result.getCreatorName());
                     return true; // 接单成功
                 } catch (BusinessException ex) {
                     assertEquals("工单不存在或已被处理", ex.getMessage());
