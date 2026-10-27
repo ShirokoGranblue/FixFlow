@@ -141,9 +141,9 @@ async function handleLogout(){
 
 .layout {
   min-height: 100vh;
-  --el-menu-text-color: #66758a;
-  --el-menu-active-color: #2563eb;
-  --el-menu-hover-bg-color: #f3f6fb;
+  --el-menu-text-color: var(--ui-muted);
+  --el-menu-active-color: var(--el-color-primary);
+  --el-menu-hover-bg-color: var(--ui-soft);
 }
 
 .el-aside {
@@ -152,7 +152,7 @@ async function handleLogout(){
   height: 100vh;
   flex-shrink: 0;
   padding: 0 12px;
-  background: #fff;
+  background: var(--ui-surface);
   border-right: 1px solid var(--ui-border);
 }
 
@@ -166,7 +166,7 @@ async function handleLogout(){
   font-size: 25px;
   font-weight: 700;
   letter-spacing: -1px;
-  color: #253248;
+  color: var(--el-text-color-primary);
 }
 
 .menu {
@@ -202,7 +202,7 @@ async function handleLogout(){
   min-height: 72px;
   height: auto;
   padding: 16px 32px;
-  background: #fff;
+  background: var(--ui-surface);
   border-bottom: 1px solid var(--ui-border);
 }
 
@@ -219,7 +219,7 @@ async function handleLogout(){
 .main {
   padding: 32px;
   min-width: 0;
-  background: #f5f7fa;
+  background: var(--el-bg-color-page);
 }
 
 @media (max-width: 900px) {

@@ -1,29 +1,86 @@
 :root {
   font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
-  color: #253248;
-  background: #f5f7fa;
+  color-scheme: dark;
+  color: var(--el-text-color-primary);
+  background: var(--el-bg-color-page);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
-  --ui-muted: #66758a;
-  --ui-border: #e3e9f1;
-  --ui-surface: #ffffff;
-  --ui-soft: #f8fafc;
-  --ui-shadow: 0 4px 20px rgb(25 45 75 / 4%);
+  --ui-muted: #a3afc2;
+  --ui-border: #303d50;
+  --ui-surface: #182231;
+  --ui-soft: #1e2b3d;
+  --ui-shadow: 0 4px 20px rgb(0 0 0 / 20%);
   --el-font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
-  --el-color-primary: #2563eb;
-  --el-color-primary-light-3: #6692f1;
-  --el-color-primary-light-5: #92b1f5;
-  --el-color-primary-light-7: #bed0f9;
-  --el-color-primary-light-8: #d3e0fb;
-  --el-color-primary-light-9: #e9effd;
-  --el-color-primary-dark-2: #1e4fbc;
-  --el-text-color-primary: #253248;
-  --el-text-color-regular: #475569;
-  --el-text-color-secondary: #66758a;
-  --el-border-color: #d8e0eb;
-  --el-border-color-light: #e3e9f1;
-  --el-border-color-lighter: #edf1f6;
+  --el-color-primary: #60a5fa;
+  --el-color-primary-light-3: #528fd6;
+  --el-color-primary-light-5: #3c6396;
+  --el-color-primary-light-7: #2e496d;
+  --el-color-primary-light-8: #263b59;
+  --el-color-primary-light-9: #1f2f45;
+  --el-color-primary-dark-2: #80b7fb;
+  --el-color-success: #67c23a;
+  --el-color-success-light-3: #4e8e2f;
+  --el-color-success-light-5: #3e6b27;
+  --el-color-success-light-7: #2d481f;
+  --el-color-success-light-8: #25371c;
+  --el-color-success-light-9: #1c2518;
+  --el-color-success-dark-2: #85ce61;
+  --el-color-warning: #e6a23c;
+  --el-color-warning-light-3: #a77730;
+  --el-color-warning-light-5: #7d5b28;
+  --el-color-warning-light-7: #533f20;
+  --el-color-warning-light-8: #3e301c;
+  --el-color-warning-light-9: #292218;
+  --el-color-warning-dark-2: #ebb563;
+  --el-color-danger: #f56c6c;
+  --el-color-danger-light-3: #b25252;
+  --el-color-danger-light-5: #854040;
+  --el-color-danger-light-7: #582e2e;
+  --el-color-danger-light-8: #412626;
+  --el-color-danger-light-9: #2a1d1d;
+  --el-color-danger-dark-2: #f78989;
+  --el-color-error: var(--el-color-danger);
+  --el-color-error-light-3: var(--el-color-danger-light-3);
+  --el-color-error-light-5: var(--el-color-danger-light-5);
+  --el-color-error-light-7: var(--el-color-danger-light-7);
+  --el-color-error-light-8: var(--el-color-danger-light-8);
+  --el-color-error-light-9: var(--el-color-danger-light-9);
+  --el-color-error-dark-2: var(--el-color-danger-dark-2);
+  --el-color-info: #a3afc2;
+  --el-color-info-light-3: #798597;
+  --el-color-info-light-5: #5d697b;
+  --el-color-info-light-7: #424d5c;
+  --el-color-info-light-8: #343f4e;
+  --el-color-info-light-9: #26303f;
+  --el-color-info-dark-2: #b5bfd0;
+  --el-bg-color-page: #101722;
+  --el-bg-color: var(--ui-surface);
+  --el-bg-color-overlay: #202c3d;
+  --el-text-color-primary: #e5ebf5;
+  --el-text-color-regular: #c5cfdd;
+  --el-text-color-secondary: var(--ui-muted);
+  --el-text-color-placeholder: #8997ac;
+  --el-text-color-disabled: #65738a;
+  --el-border-color-darker: #52627a;
+  --el-border-color-dark: #43536b;
+  --el-border-color: #39485e;
+  --el-border-color-light: var(--ui-border);
+  --el-border-color-lighter: #283548;
+  --el-border-color-extra-light: #233043;
+  --el-fill-color-darker: #3a4960;
+  --el-fill-color-dark: #303e53;
+  --el-fill-color: #28364a;
+  --el-fill-color-light: var(--ui-soft);
+  --el-fill-color-lighter: #1b2738;
+  --el-fill-color-extra-light: #192434;
+  --el-fill-color-blank: var(--ui-surface);
+  --el-mask-color: rgb(16 23 34 / 85%);
+  --el-mask-color-extra-light: rgb(16 23 34 / 35%);
+  --el-box-shadow: 0 12px 32px 4px rgb(0 0 0 / 36%), 0 8px 20px rgb(0 0 0 / 48%);
+  --el-box-shadow-light: 0 0 12px rgb(0 0 0 / 48%);
+  --el-box-shadow-lighter: var(--ui-shadow);
+  --el-box-shadow-dark: 0 16px 48px 16px rgb(0 0 0 / 48%);
   --el-border-radius-base: 8px;
 }
 
@@ -49,11 +106,12 @@ p { line-height: 1.8; overflow-wrap: anywhere; }
 }
 .el-button .ui-icon { width: 16px; height: 16px; margin-right: 6px; }
 .el-button { min-height: 36px; font-weight: 500; transition: background-color .16s, border-color .16s, box-shadow .16s; }
+.el-button--primary { --el-button-text-color: var(--el-bg-color-page); --el-button-hover-text-color: var(--el-bg-color-page); }
 .el-button.is-link { min-height: 28px; }
 .el-button:focus-visible { outline: 2px solid var(--el-color-primary); outline-offset: 3px; }
 .el-input__wrapper, .el-select__wrapper { min-height: 38px; }
 .el-textarea__inner { padding: 12px 14px; line-height: 1.7; }
-.el-form-item__label { color: #475569; font-weight: 500; }
+.el-form-item__label { color: var(--el-text-color-regular); font-weight: 500; }
 .el-form-item { margin-bottom: 24px; }
 .el-tag { border-radius: 6px; font-weight: 500; }
 .el-card { --el-card-border-color: var(--ui-border); border-radius: 12px; }
@@ -74,10 +132,10 @@ p { line-height: 1.8; overflow-wrap: anywhere; }
 .page > .el-form--inline .el-input { width: 220px; }
 .page > .el-form--inline .el-select { width: 168px; }
 .page .el-table {
-  --el-table-header-bg-color: #f8fafc;
-  --el-table-header-text-color: #52627a;
-  --el-table-row-hover-bg-color: #f4f7fd;
-  --el-table-border-color: #e3e9f1;
+  --el-table-header-bg-color: var(--ui-soft);
+  --el-table-header-text-color: var(--el-text-color-regular);
+  --el-table-row-hover-bg-color: var(--el-color-primary-light-9);
+  --el-table-border-color: var(--ui-border);
   border-radius: 10px;
   box-shadow: var(--ui-shadow);
 }
@@ -113,7 +171,7 @@ p { line-height: 1.8; overflow-wrap: anywhere; }
   align-items: center;
   justify-content: center;
   padding: 40px 20px;
-  background: radial-gradient(ellipse at 50% 0, #e9effd, transparent 65%), #f5f7fa;
+  background: radial-gradient(ellipse at 50% 0, var(--el-color-primary-light-9), transparent 65%), var(--el-bg-color-page);
 }
 .login-card, .register-card { width: 440px; max-width: 100%; }
 .login-card .el-card__body, .register-card .el-card__body { padding: 40px; }
