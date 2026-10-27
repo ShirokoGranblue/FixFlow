@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import org.springframework.util.StringUtils;
 import com.lz.fixflow.annotation.Audit;
 import com.lz.fixflow.common.BusinessException;
+import com.lz.fixflow.common.ErrorCode;
 import com.lz.fixflow.common.PageResult;
 import com.lz.fixflow.dto.TicketAssignDTO;
 import com.lz.fixflow.dto.TicketCreateDTO;
@@ -47,6 +48,7 @@ public class TicketServiceImpl implements TicketService {
     private TicketVO convertToVO(Ticket entity,Category category) {
 
         TicketVO vo = new TicketVO();
+        User user = userMapper.selectById(entity.getCreatorId());
 
         if(category != null){
             vo.setCategoryName(category.getName());
@@ -62,6 +64,7 @@ public class TicketServiceImpl implements TicketService {
 
         vo.setAssigneeId(entity.getAssigneeId());
         vo.setCreatorId(entity.getCreatorId());
+        vo.setCreatorName(user.getUsername());
         vo.setCreatedAt(entity.getCreatedAt());
         vo.setUpdatedAt(entity.getUpdatedAt());
         vo.setResolvedAt(entity.getResolvedAt());
@@ -72,6 +75,7 @@ public class TicketServiceImpl implements TicketService {
 
         TicketVO vo = new TicketVO();
         Category category = categoryMap.get(entity.getCategoryId());
+        User user = userMapper.selectById(entity.getCreatorId());
 
         vo.setCategoryId(entity.getCategoryId());
 
@@ -85,6 +89,7 @@ public class TicketServiceImpl implements TicketService {
         vo.setPriority(entity.getPriority());
         vo.setStatus(entity.getStatus());
         vo.setCreatorId(entity.getCreatorId());
+        vo.setCreatorName(user.getUsername());
         vo.setCreatedAt(entity.getCreatedAt());
         vo.setUpdatedAt(entity.getUpdatedAt());
         vo.setResolvedAt(entity.getResolvedAt());
@@ -129,7 +134,7 @@ public class TicketServiceImpl implements TicketService {
         Category category = categoryMapper.selectById(dto.getCategoryId());
 
         if (category == null) {
-            throw new BusinessException("工单分类不存在");
+            throw new BusinessException(ErrorCode.NOT_FOUND, "工单分类不存在");
         }
 
         ticket.setCategoryId(dto.getCategoryId());
@@ -179,7 +184,7 @@ public class TicketServiceImpl implements TicketService {
         );
 
         if(row == 0){
-            throw new BusinessException("工单已经取消或不存在");
+            throw new BusinessException(ErrorCode.CONFLICT, "工单已经取消或不存在");
         }
 
         ticketHistoryService.recordHistory(
@@ -219,7 +224,7 @@ public class TicketServiceImpl implements TicketService {
         );
 
         if(row == 0){
-            throw new BusinessException("工单已重新提交或工单不存在");
+            throw new BusinessException(ErrorCode.CONFLICT, "工单已重新提交或工单不存在");
         }
 
         ticketHistoryService.recordHistory(
@@ -248,7 +253,7 @@ public class TicketServiceImpl implements TicketService {
         );
 
         if(list == null || list.isEmpty()){
-            throw new BusinessException("当前无工单");
+            throw new BusinessException(ErrorCode.BUSINESS_ERROR, "当前无工单");
         }
 
         List<Long> categoryIds = list.stream()
@@ -298,7 +303,7 @@ public class TicketServiceImpl implements TicketService {
         );
 
         if (list==null|| list.isEmpty()){
-            throw new BusinessException("当前无待处理工单");
+            return List.of();
         }
 
         List<Long> categoryIds = list.stream()
@@ -313,7 +318,7 @@ public class TicketServiceImpl implements TicketService {
             categories = categoryMapper.selectBatchIds(categoryIds);
         }
 
-        Map<Long , Category> categoryMap = categories.stream()
+        Map<Long, Category> categoryMap = categories.stream()
                 .collect(Collectors.toMap(Category::getId, category->category));
 
         return list.stream()
@@ -338,7 +343,7 @@ public class TicketServiceImpl implements TicketService {
                 );
 
         if(row==0){
-            throw new BusinessException("工单不存在或已被处理");
+            throw new BusinessException(ErrorCode.CONFLICT, "工单不存在或已被处理");
         }
 
         Ticket ticket = ticketMapper.selectById(id);
@@ -369,7 +374,7 @@ public class TicketServiceImpl implements TicketService {
         );
 
         if (list==null|| list.isEmpty()){
-            throw new BusinessException("当前无处理中的工单");
+            return List.of();
         }
 
         List<Long> categoryIds = list.stream()
@@ -410,7 +415,7 @@ public class TicketServiceImpl implements TicketService {
                 );
 
         if(row == 0){
-            throw new BusinessException("工单不存在或已被处理");
+            throw new BusinessException(ErrorCode.CONFLICT, "工单不存在或已被处理");
         }
 
         Ticket ticket = ticketMapper.selectById(id);
@@ -437,7 +442,7 @@ public class TicketServiceImpl implements TicketService {
         User user  = userMapper.selectById(userid);
 
         if (user==null) {
-            throw new BusinessException("用户不存在");
+            throw new BusinessException(ErrorCode.NOT_FOUND, "用户不存在");
         }
 
             int row = ticketMapper.update(null,
@@ -450,7 +455,7 @@ public class TicketServiceImpl implements TicketService {
             );
 
         if(row == 0){
-            throw new BusinessException("工单不存在或当前状态无法关闭");
+            throw new BusinessException(ErrorCode.CONFLICT, "工单不存在或当前状态无法关闭");
         }
 
         Ticket ticket = ticketMapper.selectById(id);
@@ -579,11 +584,11 @@ public class TicketServiceImpl implements TicketService {
         User user = userMapper.selectById(dto.getAssignId());
 
         if (user == null) {
-            throw new BusinessException("处理人员不存在");
+            throw new BusinessException(ErrorCode.NOT_FOUND, "处理人员不存在");
         }
 
         if (UserRole.USER.getValue().equals(user.getRole())) {
-            throw new BusinessException("无法分配工单给普通用户");
+            throw new BusinessException(ErrorCode.INVALID_ARGUMENT, "无法分配工单给普通用户");
         }
         int row = ticketMapper.update(null,
                 new LambdaUpdateWrapper<Ticket>()
@@ -596,7 +601,7 @@ public class TicketServiceImpl implements TicketService {
         );
 
         if (row == 0){
-            throw new BusinessException("工单不存在或已被处理");
+            throw new BusinessException(ErrorCode.CONFLICT, "工单不存在或已被处理");
         }
 
         ticketHistoryService.recordHistory(

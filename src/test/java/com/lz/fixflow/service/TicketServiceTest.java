@@ -9,6 +9,7 @@ import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.lz.fixflow.common.BusinessException;
 import com.lz.fixflow.entity.Category;
 import com.lz.fixflow.entity.Ticket;
+import com.lz.fixflow.entity.User;
 import com.lz.fixflow.enums.TicketAction;
 import com.lz.fixflow.enums.TicketStatus;
 import com.lz.fixflow.mapper.CategoryMapper;
@@ -42,6 +43,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+import java.util.List;
 import java.util.Locale;
 
 @ExtendWith(MockitoExtension.class)
@@ -91,6 +93,26 @@ class TicketServiceTest {
     }
 
     @Test
+    @DisplayName("无待接工单时返回空列表")
+    void openTicketsReturnEmptyListWhenNoTicketsExist() {
+        when(ticketMapper.selectList(any(Wrapper.class))).thenReturn(List.of());
+
+        assertTrue(ticketService.getOpenTickets().isEmpty());
+
+        verifyNoInteractions(categoryMapper);
+    }
+
+    @Test
+    @DisplayName("无处理中工单时返回空列表")
+    void assignedTicketsReturnEmptyListWhenNoTicketsExist() {
+        when(ticketMapper.selectList(any(Wrapper.class))).thenReturn(List.of());
+
+        assertTrue(ticketService.getAssignedTickets().isEmpty());
+
+        verifyNoInteractions(categoryMapper);
+    }
+
+    @Test
     @DisplayName("接单成功时状态变更并记录历史")
     void success() {
         // Mapper 的 update(entity, wrapper) 是 BaseMapper 提供的，不需要自定义 claim()。
@@ -100,6 +122,7 @@ class TicketServiceTest {
         ticket.setId(TICKET_ID);
         ticket.setStatus(TicketStatus.IN_PROGRESS.getValue());
         ticket.setAssigneeId(STAFF_ID);
+        ticket.setCreatorId("creator");
         ticket.setCategoryId(1L);
         when(ticketMapper.selectById(TICKET_ID)).thenReturn(ticket);
 
@@ -107,6 +130,10 @@ class TicketServiceTest {
         category.setId(1L);
         category.setName("网络");
         when(categoryMapper.selectById(1L)).thenReturn(category);
+
+        User creator = new User();
+        creator.setUsername("测试创建者");
+        when(userMapper.selectById("creator")).thenReturn(creator);
 
         TicketVO result = ticketService.handleTicket(TICKET_ID);
 

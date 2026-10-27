@@ -4,6 +4,7 @@ import cn.dev33.satoken.stp.StpUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.lz.fixflow.annotation.Audit;
 import com.lz.fixflow.common.BusinessException;
+import com.lz.fixflow.common.ErrorCode;
 import com.lz.fixflow.dto.TicketCommentDTO;
 import com.lz.fixflow.entity.Ticket;
 import com.lz.fixflow.entity.TicketComment;
@@ -76,7 +77,7 @@ public class TicketCommentImpl implements CommentService {
         Ticket ticket = ticketMapper.selectById(id);
 
         if (ticket == null) {
-            throw new BusinessException("工单不存在");
+            throw new BusinessException(ErrorCode.NOT_FOUND, "工单不存在");
         }
 
         permissionService.requireTicketAccess(userid,ticket);

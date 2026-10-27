@@ -1,7 +1,6 @@
 package com.lz.fixflow.service.impl;
 
 import cn.dev33.satoken.stp.StpUtil;
-import com.lz.fixflow.common.BusinessException;
 import com.lz.fixflow.entity.Category;
 import com.lz.fixflow.mapper.CategoryMapper;
 import com.lz.fixflow.service.CategoryService;
@@ -22,7 +21,7 @@ public class CategoryServiceImpl implements CategoryService {
         CategoryVO vo = new CategoryVO();
 
         if (entity == null ){
-            throw new BusinessException("内部错误");
+            throw new IllegalStateException("内部错误");
         }
 
         vo.setId(entity.getId());

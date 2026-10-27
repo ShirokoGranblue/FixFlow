@@ -1,0 +1,1 @@
+create INDEX idx_ticket_creator_created_at on ticket(creator_id,created_at);

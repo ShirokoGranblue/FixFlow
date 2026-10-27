@@ -30,7 +30,6 @@ import java.util.List;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -84,6 +83,8 @@ class TicketResourceAccessHttpTest {
         category = new Category();
         category.setId(CATEGORY_ID);
         category.setName("网络问题");
+
+        when(userMapper.selectById(CREATOR_ID)).thenReturn(user(CREATOR_ID, UserRole.USER.getValue()));
     }
 
     @AfterEach
@@ -119,8 +120,8 @@ class TicketResourceAccessHttpTest {
                     .andExpect(jsonPath("$.data.creatorId").value(CREATOR_ID))
                     .andExpect(jsonPath("$.data.categoryName").value("网络问题"));
 
-        // 创建者在 PermissionService 中直接放行，不需要查角色。
-        verifyNoInteractions(userMapper);
+        // 权限校验直接放行，DTO 转换仍需读取创建者信息。
+        verify(userMapper).selectById(CREATOR_ID);
     }
 
     @Test
@@ -136,8 +137,8 @@ class TicketResourceAccessHttpTest {
                     .andExpect(jsonPath("$.code").value(200))
                     .andExpect(jsonPath("$.data.assigneeId").value(ASSIGNEE_ID));
 
-        // 处理人同样直接放行，不需要额外查用户角色。
-        verifyNoInteractions(userMapper);
+        // 权限校验直接放行，DTO 转换仍需读取创建者信息。
+        verify(userMapper).selectById(CREATOR_ID);
     }
 
     @Test
@@ -168,9 +169,9 @@ class TicketResourceAccessHttpTest {
 
         mvc.perform(get("/api/ticket/{id}", TICKET_ID)
                         .header(StpUtil.getTokenName(), token))
-                        // 当前 GlobalExceptionHandler 把业务错误包装为 JSON，HTTP 状态仍为 200。
-                        .andExpect(status().isOk())
-                        .andExpect(jsonPath("$.code").value(4000))
+                        .andExpect(status().isForbidden())
+                        .andExpect(jsonPath("$.httpStatus").value(403))
+                        .andExpect(jsonPath("$.code").value(4030))
                         .andExpect(jsonPath("$.message").value("无权访问工单"));
 
         // 权限校验已经失败，所以后面的分类查询不应该发生。
@@ -185,8 +186,9 @@ class TicketResourceAccessHttpTest {
 
         mvc.perform(get("/api/ticket/{id}", TICKET_ID)
                         .header(StpUtil.getTokenName(), token))
-                        .andExpect(status().isOk())
-                        .andExpect(jsonPath("$.code").value(4000))
+                        .andExpect(status().isNotFound())
+                        .andExpect(jsonPath("$.httpStatus").value(404))
+                        .andExpect(jsonPath("$.code").value(4040))
                         .andExpect(jsonPath("$.message").value("工单不存在"));
 
         verify(categoryMapper, never()).selectById(anyLong());

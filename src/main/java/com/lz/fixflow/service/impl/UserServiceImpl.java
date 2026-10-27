@@ -7,6 +7,7 @@ import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lz.fixflow.annotation.Audit;
 import com.lz.fixflow.common.BusinessException;
+import com.lz.fixflow.common.ErrorCode;
 import com.lz.fixflow.common.PageResult;
 import com.lz.fixflow.dto.UserLoginDTO;
 import com.lz.fixflow.dto.UserQueryDTO;
@@ -62,7 +63,7 @@ public class UserServiceImpl implements UserService {
         );
 
         if (count > 0) {
-            throw new BusinessException("用户名已存在");
+            throw new BusinessException(ErrorCode.USERNAME_EXISTS, "用户名已存在");
         }
 
         user.setId(UUID.randomUUID().toString());
@@ -86,11 +87,11 @@ public class UserServiceImpl implements UserService {
         );
 
         if(user==null){
-            throw new BusinessException("用户不存在");
+            throw new BusinessException(ErrorCode.INVALID_CREDENTIALS);
         }
 
         if(!passwordEncoder.matches(dto.getPassword(),user.getPassword())){
-            throw new BusinessException("用户名或密码错误");
+            throw new BusinessException(ErrorCode.INVALID_CREDENTIALS, "用户名或密码错误");
         }
 
         StpUtil.login(user.getId());
@@ -120,7 +121,7 @@ public class UserServiceImpl implements UserService {
         );
 
         if(user==null){
-            throw new BusinessException("用户不存在");
+            throw new BusinessException(ErrorCode.NOT_LOGIN);
         }
 
         return convertToVO(user);
@@ -186,7 +187,7 @@ public class UserServiceImpl implements UserService {
         permissionService.requireAdmin(adminid);
 
         if(id.equals(adminid)){
-            throw new BusinessException("不能修改自己的角色");
+            throw new BusinessException(ErrorCode.FORBIDDEN, "不能修改自己的角色");
         }
 
         int row = userMapper.update(null,
@@ -198,7 +199,7 @@ public class UserServiceImpl implements UserService {
         );
 
         if (row==0){
-            throw new BusinessException("用户不存在或无法修改");
+            throw new BusinessException(ErrorCode.CONFLICT, "用户不存在或无法修改");
         }
 
         User user = userMapper.selectById(id);

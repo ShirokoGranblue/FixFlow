@@ -1,6 +1,7 @@
 package com.lz.fixflow.service.impl;
 
 import com.lz.fixflow.common.BusinessException;
+import com.lz.fixflow.common.ErrorCode;
 import com.lz.fixflow.entity.Ticket;
 import com.lz.fixflow.entity.User;
 import com.lz.fixflow.enums.UserRole;
@@ -21,11 +22,11 @@ public class PermissionServiceImpl implements PermissionService {
         User user = userMapper.selectById(userid);
 
         if(user==null){
-            throw new BusinessException("用户不存在");
+            throw new BusinessException(ErrorCode.NOT_FOUND, "用户不存在");
         }
 
         if(!UserRole.ADMIN.getValue().equals(user.getRole())){
-            throw new BusinessException("权限不足，无权访问");
+            throw new BusinessException(ErrorCode.FORBIDDEN, "权限不足，无权访问");
         }
     }
 
@@ -35,14 +36,14 @@ public class PermissionServiceImpl implements PermissionService {
         User user = userMapper.selectById(userid);
 
         if(user==null){
-            throw new BusinessException("用户不存在");
+            throw new BusinessException(ErrorCode.NOT_FOUND, "用户不存在");
         }
 
         boolean staff = UserRole.STAFF.getValue().equals(user.getRole());
         boolean admin = UserRole.ADMIN.getValue().equals(user.getRole());
 
         if(!staff && !admin){
-            throw new BusinessException("无权处理工单");
+            throw new BusinessException(ErrorCode.FORBIDDEN, "无权处理工单");
         }
     }
 
@@ -50,7 +51,7 @@ public class PermissionServiceImpl implements PermissionService {
     public void requireTicketAccess(String userid , Ticket ticket){
 
         if(ticket==null){
-            throw new BusinessException("工单不存在");
+            throw new BusinessException(ErrorCode.NOT_FOUND, "工单不存在");
         }
 
         if(userid.equals(ticket.getCreatorId())){
@@ -64,13 +65,13 @@ public class PermissionServiceImpl implements PermissionService {
         User user = userMapper.selectById(userid);
 
         if(user==null){
-            throw new BusinessException("用户不存在");
+            throw new BusinessException(ErrorCode.NOT_FOUND, "用户不存在");
         }
 
         if(UserRole.ADMIN.getValue().equals(user.getRole())){
             return;
         }
 
-        throw new BusinessException("无权访问工单");
+        throw new BusinessException(ErrorCode.FORBIDDEN, "无权访问工单");
     }
 }

@@ -18,6 +18,8 @@ public class TicketVO {
     private String status;
 
     private String creatorId;
+    
+    private String creatorName;
 
     private String assigneeId;
 

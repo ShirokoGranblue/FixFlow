@@ -24,11 +24,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class TicketQueryValidationTests {
 
     private final TicketService service = mock(TicketService.class);
+    private final CommentService commentService = mock(CommentService.class);
     private MockMvc mvc;
 
     @BeforeEach
     void setUp() {
-        mvc = MockMvcBuilders.standaloneSetup(new TicketController(service, mock(CommentService.class)))
+        mvc = MockMvcBuilders.standaloneSetup(new TicketController(service, commentService, null))
                 .setControllerAdvice(new GlobalExceptionHandler())
                 .build();
         when(service.searchTickets(any())).thenReturn(new PageResult<>(List.of(), 0, 1, 10, 0));
@@ -40,6 +41,8 @@ class TicketQueryValidationTests {
         mvc.perform(get("/api/ticket/manage")
                         .param("pageSize", Long.toString(size))
                         .param("current", Long.toString(current)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.httpStatus").value(400))
                 .andExpect(jsonPath("$.code").value(4001));
 
         verifyNoInteractions(service);

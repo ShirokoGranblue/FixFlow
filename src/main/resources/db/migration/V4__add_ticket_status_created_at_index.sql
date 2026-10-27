@@ -1,0 +1,1 @@
+create INDEX idx_ticket_status_created_at on ticket(status,created_at);

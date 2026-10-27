@@ -4,21 +4,32 @@ import cn.dev33.satoken.annotation.SaCheckRole;
 import cn.dev33.satoken.annotation.SaMode;
 import com.lz.fixflow.common.PageResult;
 import com.lz.fixflow.common.Result;
+import com.lz.fixflow.dto.CursorPageResponseDTO;
 import com.lz.fixflow.dto.TicketAssignDTO;
 import com.lz.fixflow.dto.TicketCommentDTO;
 import com.lz.fixflow.dto.TicketCreateDTO;
 import com.lz.fixflow.dto.TicketQueryDTO;
 import com.lz.fixflow.service.CommentService;
+import com.lz.fixflow.service.TicketCursorService;
 import com.lz.fixflow.service.TicketService;
 import com.lz.fixflow.vo.TicketCommentVO;
 import com.lz.fixflow.vo.TicketDetailVO;
 import com.lz.fixflow.vo.TicketHistoryVO;
+import com.lz.fixflow.vo.TicketListItemVO;
 import com.lz.fixflow.vo.TicketVO;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.RequestEntity;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @RestController
 @RequiredArgsConstructor
@@ -27,6 +38,7 @@ public class TicketController {
 
     private final TicketService ticketService;
     private final CommentService commentService;
+    private final TicketCursorService ticketCursorService;
 
     @PostMapping("/create")
     public Result<TicketVO> createTicket(@Valid @RequestBody TicketCreateDTO dto) {
@@ -73,7 +85,7 @@ public class TicketController {
     }
 
     @PostMapping("/{id}/close")
-    @SaCheckRole(value = {"STAFF"},mode = SaMode.OR)
+    @SaCheckRole(value = {"STAFF","ADMIN"},mode = SaMode.OR)
     public Result<TicketVO> closeTicket(@PathVariable String id) {
         return Result.success(ticketService.closeTicket(id));
     }
@@ -114,5 +126,22 @@ public class TicketController {
     @GetMapping("/{id}/detail")
     public Result<TicketDetailVO> getTicketDetail(@PathVariable String id) {
         return  Result.success(ticketService.getTicketDetail(id));
+    }
+
+    @GetMapping("/cursor")
+    @SaCheckRole(value = {"STAFF","ADMIN"},mode=SaMode.OR)
+    public Result<CursorPageResponseDTO<TicketListItemVO>> queryCursorPageResponseDTO(
+                                                    @RequestParam(defaultValue = "20") int size,
+
+                                                    @RequestParam(required = false)
+                                                    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)    
+                                                    LocalDateTime cursorTime,
+
+                                                    @RequestParam(required = false) String cursorId) {
+
+        return Result.success(
+            ticketCursorService.queryOpenTicketByCursor(size, 
+                                                        cursorTime, 
+                                                        cursorId));
     }
 }

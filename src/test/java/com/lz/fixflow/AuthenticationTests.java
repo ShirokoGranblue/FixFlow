@@ -6,6 +6,7 @@ import com.lz.fixflow.mapper.UserMapper;
 import com.lz.fixflow.service.CategoryService;
 import com.lz.fixflow.service.CommentService;
 import com.lz.fixflow.service.DashBoardService;
+import com.lz.fixflow.service.TicketCursorService;
 import com.lz.fixflow.service.TicketService;
 import com.lz.fixflow.service.UserService;
 import org.junit.jupiter.api.AfterEach;
@@ -56,6 +57,8 @@ class AuthenticationTests {
     private DashBoardService dashboard;
     @MockitoBean
     private CategoryService categories;
+    @MockitoBean 
+    private TicketCursorService cursorService;
 
     private final List<String> tokens = new ArrayList<>();
 
@@ -77,7 +80,8 @@ class AuthenticationTests {
                 new Endpoint("POST", "/api/ticket/ticket-id/close", "", false),
                 new Endpoint("POST", "/api/ticket/ticket-id/assign", "{\"assignId\":\"staff-id\"}", true),
                 new Endpoint("GET", "/api/admin/staff", "", true),
-                new Endpoint("POST", "/api/admin/user-id/role", "{\"role\":\"STAFF\"}", true)
+                new Endpoint("POST", "/api/admin/user-id/role", "{\"role\":\"STAFF\"}", true),
+                new Endpoint("GET", "/api/ticket/cursor", "", false)
         );
     }
 
@@ -121,11 +125,11 @@ class AuthenticationTests {
     }
 
     private void assertNoBusinessCalls() {
-        verifyNoInteractions(userService, tickets, comments, dashboard, categories);
+        verifyNoInteractions(userService, tickets, comments, dashboard, categories,cursorService);
     }
 
     private long businessCallCount() {
-        return Stream.of(userService, tickets, comments, dashboard, categories)
+        return Stream.of(userService, tickets, comments, dashboard, categories, cursorService)
                 .mapToLong(service -> mockingDetails(service).getInvocations().size()).sum();
     }
 
@@ -160,6 +164,8 @@ class AuthenticationTests {
     @MethodSource("protectedEndpoints")
     void anonymousRequestsAreRejectedBeforeBusinessLogic(Endpoint endpoint) throws Exception {
         mvc.perform(endpoint.toRequest())
+                .andExpect(status().is(401))
+                .andExpect(jsonPath("$.httpStatus").value(401))
                 .andExpect(jsonPath("$.code").value(4010))
                 .andExpect(jsonPath("$.message").value("请先登录"));
 
@@ -171,6 +177,8 @@ class AuthenticationTests {
     @ValueSource(strings = {"/api/ticket/my-tickets", "/api/ticket/open", "/api/admin/staff"})
     void invalidTokensAreRejected(String path) throws Exception {
         mvc.perform(get(path).header(StpUtil.getTokenName(), "invalid-test-token"))
+                .andExpect(status().is(401))
+                .andExpect(jsonPath("$.httpStatus").value(401))
                 .andExpect(jsonPath("$.code").value(4010));
 
         assertNoBusinessCalls();
@@ -183,6 +191,8 @@ class AuthenticationTests {
         StpUtil.logoutByTokenValue(token);
 
         mvc.perform(get("/api/admin/staff").header(StpUtil.getTokenName(), token))
+                .andExpect(status().is(401))
+                .andExpect(jsonPath("$.httpStatus").value(401))
                 .andExpect(jsonPath("$.code").value(4010));
 
         assertNoBusinessCalls();
@@ -208,11 +218,10 @@ class AuthenticationTests {
         User user = account(role);
         String token = login(user);
         boolean allowed = "ADMIN".equals(role) || ("STAFF".equals(role) && !endpoint.adminOnly());
-        if ("/api/ticket/ticket-id/close".equals(endpoint.path())) {
-            allowed = "STAFF".equals(role);
-        }
 
         mvc.perform(endpoint.toRequest().header(StpUtil.getTokenName(), token))
+                .andExpect(status().is(allowed ? 200 : 403))
+                .andExpect(jsonPath("$.httpStatus").value(allowed ? 200 : 403))
                 .andExpect(jsonPath("$.code").value(allowed ? 200 : 4030));
 
         verify(users).selectById(user.getId());
@@ -233,6 +242,8 @@ class AuthenticationTests {
         when(users.selectById(user.getId())).thenReturn(null);
 
         mvc.perform(get("/api/admin/staff").header(StpUtil.getTokenName(), token))
+                .andExpect(status().is(403))
+                .andExpect(jsonPath("$.httpStatus").value(403))
                 .andExpect(jsonPath("$.code").value(4030));
 
         assertNoBusinessCalls();
@@ -249,6 +260,8 @@ class AuthenticationTests {
 
         user.setRole("USER");
         mvc.perform(get("/api/admin/staff").header(StpUtil.getTokenName(), token))
+                .andExpect(status().is(403))
+                .andExpect(jsonPath("$.httpStatus").value(403))
                 .andExpect(jsonPath("$.code").value(4030));
 
         assertNoBusinessCalls();
