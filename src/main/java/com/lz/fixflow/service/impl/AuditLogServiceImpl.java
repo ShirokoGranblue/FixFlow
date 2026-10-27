@@ -4,7 +4,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.lz.fixflow.common.PageResult;
 import com.lz.fixflow.entity.AuditLog;
+import com.lz.fixflow.entity.User;
 import com.lz.fixflow.mapper.AuditLogMapper;
+import com.lz.fixflow.mapper.UserMapper;
 import com.lz.fixflow.service.AuditLogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -22,6 +24,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class AuditLogServiceImpl implements AuditLogService {
 
     private final AuditLogMapper auditLogMapper;
+    private final UserMapper userMapper;
 
     @Override
     public PageResult<AuditLog> getAuditLog(long current, long pageSize) {
@@ -53,19 +56,21 @@ public class AuditLogServiceImpl implements AuditLogService {
                          String ip,
                          ProceedingJoinPoint joinPoint){
         try {
-            AuditLog log = new AuditLog();
+            AuditLog auditLog = new AuditLog();
+            User user = userMapper.selectById(userid);
 
-            log.setUserId(userid);
-            log.setAction(action);
-            log.setSuccess(success);
-            log.setErrorMessage(errorMessage);
-            log.setDurationMs(durationMs);
-            log.setCreatedAt(LocalDateTime.now());
-            log.setIp(ip);
+            auditLog.setUserId(userid);
+            auditLog.setUsername(user.getUsername());
+            auditLog.setAction(action);
+            auditLog.setSuccess(success);
+            auditLog.setErrorMessage(errorMessage);
+            auditLog.setDurationMs(durationMs);
+            auditLog.setCreatedAt(LocalDateTime.now());
+            auditLog.setIp(ip);
 
-            log.setMethod(joinPoint.getSignature().toShortString());
+            auditLog.setMethod(joinPoint.getSignature().toShortString());
 
-            auditLogMapper.insert(log);
+            auditLogMapper.insert(auditLog);
 
         }catch (Exception e){
             log.error(e.getMessage());

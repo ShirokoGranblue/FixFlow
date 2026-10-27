@@ -4,6 +4,7 @@ import type { PageResult } from "./ticket.ts";
 
 export interface AuditLog{
     id:number,
+    username:string,
     ip:string,
     userId:string | null,
     action:string,

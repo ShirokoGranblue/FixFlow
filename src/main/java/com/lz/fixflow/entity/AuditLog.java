@@ -14,6 +14,8 @@ public class AuditLog {
     @TableId
     private Long id;
 
+    private String username;
+    
     @TableField("user_id")
     private String userId;
 

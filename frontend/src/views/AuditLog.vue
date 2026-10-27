@@ -2,6 +2,7 @@
 import { onMounted, reactive, ref }from 'vue'
 import { getAuditLog, type AuditLog } from '../api/audit.ts';
 import { ElMessage } from 'element-plus';
+import { formatDateTime } from '../utils/ticketDisplay.ts';
 
 const loading = ref(false)
 const logs = ref<AuditLog[] | null>([])
@@ -74,6 +75,12 @@ onMounted(()=>{
       />
 
       <el-table-column
+        prop="username"
+        label="用户名"
+        width="100"
+      />
+
+      <el-table-column
         prop="ip"
         label="请求ip"
         width="100"
@@ -141,7 +148,11 @@ onMounted(()=>{
         prop="createdAt"
         label="时间"
         width="190"
-      />
+      >
+        <template #default="{ row }">
+          {{ formatDateTime(row.createdAt) }}
+        </template>
+      </el-table-column>
 
     </el-table>
 
