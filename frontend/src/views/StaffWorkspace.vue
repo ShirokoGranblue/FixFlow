@@ -20,7 +20,7 @@ async function loadOpenTickets() {
         openTickets.value = result.data
     }
     else {
-        ElMessage.error(result.message)
+        throw new Error(result.message)
     }
 }
 
@@ -33,18 +33,27 @@ async function loadAssignedTickets() {
         assignedTickets.value = result.data
     }
     else {
-        ElMessage.error(result.message)
+        throw new Error(result.message)
     }
 }
 
-async function loadData() {
+async function loadData(showMessage = false) {
 
     loading.value = true
 
     try {
         await Promise.all([loadOpenTickets(), loadAssignedTickets()])
+        if (showMessage) {
+            if (openTickets.value.length === 0 && assignedTickets.value.length === 0) {
+                ElMessage.info("暂无工单")
+            } else {
+                ElMessage.success("刷新成功")
+            }
+        }
     } catch (error) {
-        ElMessage.error("工作台加载失败")
+        if (showMessage) {
+            ElMessage.error(error instanceof Error ? error.message : "工作台加载失败")
+        }
     } finally {
         loading.value = false
     }
@@ -66,9 +75,16 @@ async function handleClaim(id:string){
             return
         }
 
-        ElMessage.success("接单成功")
+        const claimedTicket = result.data
+        openTickets.value = openTickets.value.filter(ticket => String(ticket.id) !== String(claimedTicket.id))
+        assignedTickets.value = [
+            claimedTicket,
+            ...assignedTickets.value.filter(ticket => String(ticket.id) !== String(claimedTicket.id))
+        ]
 
+        ElMessage.success("接单成功")
         await loadData()
+
     }catch(error){
         ElMessage.error("接单失败")
     }finally{
@@ -87,6 +103,10 @@ onMounted(() => {
 
         <h2>STAFF 工作台</h2>
 
+        <el-button type="primary" :loading="loading" @click="loadData(true)">
+            刷新
+        </el-button>
+
         <section class="section">
 
             <h3>
@@ -96,11 +116,11 @@ onMounted(() => {
             <el-table :data="openTickets" border>
 
                 <el-table-column 
-                prop="id" label="ID" width="80" 
+                prop="title" label="标题" 
                 />
 
-                <el-table-column 
-                prop="title" label="标题" 
+                <el-table-column
+                prop="creatorName" label="创建者"
                 />
 
                 <el-table-column 
@@ -146,12 +166,6 @@ onMounted(() => {
         :data="assignedTickets"
         border
       >
-
-        <el-table-column
-          prop="id"
-          label="ID"
-          width="80"
-        />
 
         <el-table-column
           prop="title"

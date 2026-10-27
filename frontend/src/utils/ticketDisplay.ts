@@ -61,10 +61,19 @@ export function getPriorityDisplay(priority:string):TagDisplay{
     }
 }
 
-export function formatDateTime(value:string | null | undefined):string{
-    if(!value){
-        return '-'
-    }
+export function formatDateTime(
+  value: string | null | undefined
+): string {
+  if (!value) {
+    return '-'
+  }
 
-    return value.replace('T',' ').slice(0,16)
+  const [datePart, timePart] = value
+    .replace('T', ' ')
+    .split(' ')
+
+  const date = datePart.replace(/-/g, '/')
+  const time = (timePart ?? '').slice(0, 8)
+
+  return time ? `${date} ${time}` : date
 }

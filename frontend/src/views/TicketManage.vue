@@ -283,12 +283,14 @@ onMounted(() => {
 
         <el-table :data="ticket" v-loading="loading" border>
 
-            <el-table-column prop="id" label="ID" width="80" />
-
-
             <el-table-column prop="title" label="标题" min-width="220" />
-
-
+                  
+            <el-table-column
+                prop="creatorName"
+                label="用户名"
+                width="100"
+            />
+            
             <el-table-column prop="categoryName" label="分类" width="120" />
 
             <el-table-column label="优先级" width="110">
@@ -308,7 +310,6 @@ onMounted(() => {
                     {{ formatDateTime(row.createdAt) }}
                 </template>
             </el-table-column>
-
 
             <el-table-column label="操作" width="120">
 

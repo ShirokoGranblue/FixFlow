@@ -3,13 +3,14 @@ import type { Result } from './user.ts'
 
 export interface TicketVO{
 
-    id: number
+    id: string
     title : string
     description : string
     priority : string
     status : string
 
     creatorId : string
+    creatorName : string
     assigneeId : string | null
 
     categoryId : number

@@ -6,6 +6,8 @@ import { useRouter } from 'vue-router';
 import TicketPriorityTag from '../component/TicketPriorityTag.vue'
 import TicketStatusTag from '../component/TicketStatusTag.vue'
 import { formatDateTime } from '../utils/ticketDisplay.ts'
+import { ElMessage } from 'element-plus'
+import { getRequestError } from '../utils/requestError.ts'
 
 const router = useRouter();
 const tickets = ref<TicketVO[]>([]);
@@ -19,12 +21,14 @@ async function loadTickets() {
     if (response.data.code === 200) {
       tickets.value = response.data.data;
     }
+  } catch (error) {
+    ElMessage.error(getRequestError(error, '工单加载失败'));
   } finally {
     loading.value = false;
   }
 }
 
-function openTicket(id: number) {
+function openTicket(id: string) {
   router.push(`/ticket/${id}`);
 }
 

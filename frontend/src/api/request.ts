@@ -32,7 +32,7 @@ request.interceptors.response.use(
     response => {
 
         const data = response.data
-
+        
         if (data?.code === 4010) {
             clearAuthAndRedirect()
             return Promise.reject(new Error("登录状态已失效，请重新登录"))
@@ -43,7 +43,8 @@ request.interceptors.response.use(
 
     error => {
 
-        if (axios.isAxiosError(error) && error.response?.status === 401) {
+        if (axios.isAxiosError(error) && error.response?.status === 401
+                && error.response.data?.code !== 4011) {
             clearAuthAndRedirect()
         }
 

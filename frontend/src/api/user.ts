@@ -38,6 +38,7 @@ export interface RegisterDTO{
 }
 
 export interface Result<T> {
+    httpStatus: number
     code: number
     message: string
     data: T

@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { login } from '../api/user'
 import { useUserStore } from '../stores/user.ts'
+import { getRequestError } from '../utils/requestError.ts'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -47,10 +48,11 @@ async function handleLogin() {
     router.push('/')
 
   } catch (error) {
-    ElMessage.error('登录失败')
+    ElMessage.error(getRequestError(error, '登录失败'))
   } finally {
     loading.value = false
   }
+}
 
 onMounted(() => {
     if (route.query.reason === 'session-expired') {
@@ -61,7 +63,6 @@ onMounted(() => {
         void router.replace({ query })
     }
 })
-}
 </script>
 
 <template>

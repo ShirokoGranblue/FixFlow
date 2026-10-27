@@ -6,6 +6,7 @@ import { updateUsers } from '../api/user.ts';
 import type { UserVO } from '../api/user.ts';
 import { useUserStore } from '../stores/user.ts';
 import { getRequestError } from '../utils/requestError.ts';
+import { formatDateTime } from '../utils/ticketDisplay.ts';
 
 const loading = ref(false)
 const query = ref({
@@ -212,12 +213,6 @@ onMounted(()=>{
     >
 
       <el-table-column
-        prop="id"
-        label="ID"
-        width="80"
-      />
-
-      <el-table-column
         prop="username"
         label="用户名"
       />
@@ -235,10 +230,13 @@ onMounted(()=>{
 
       <el-table-column
         prop="createdAt"
-        label="注册时间"
+        label="时间"
         width="190"
-      />
-
+      >
+        <template #default="{ row }">
+          {{ formatDateTime(row.createdAt) }}
+        </template>
+      </el-table-column>
 
       <el-table-column
         label="操作"

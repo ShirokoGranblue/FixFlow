@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
 import {register} from '../api/user.ts';
+import { getRequestError } from '../utils/requestError.ts';
 
 
 const loading = ref(false);
@@ -15,16 +16,18 @@ const form = ref({
 })
 
 async function handleRegister(){
-    loading.value = true;
     
     if(!form.value.username.trim()){
         ElMessage.warning("请输入用户名")
+        return
     }
     if(!form.value.password.trim()){
         ElMessage.warning("请填写密码")
+        return
     }
     if(!form.value.email.trim()){
         ElMessage.warning("请输入邮箱")
+        return
     }
     if (form.value.password.length < 6) {
         ElMessage.warning('密码至少6位')
@@ -34,6 +37,8 @@ async function handleRegister(){
         ElMessage.warning('两次密码输入不一致')
         return
     }
+    
+    loading.value = true;
 
     try{
 
@@ -45,12 +50,10 @@ async function handleRegister(){
         }
 
         ElMessage.success("注册成功")
-
-        router.push(`/user/login`)
+        await router.push(`/user/login`)
 
     }catch(error){
-
-        ElMessage.error("账号注册失败")
+        ElMessage.error(getRequestError(error, "账号注册失败"))
     }finally{
 
         loading.value = false;
@@ -127,7 +130,7 @@ async function handleRegister(){
           </el-button>
 
           <el-button
-            @click="router.push('/login')"
+            @click="router.push('/user/login')"
           >
             返回登录
           </el-button>

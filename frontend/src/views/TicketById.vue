@@ -367,7 +367,7 @@ watch(
                     </span>
 
                     <span>
-                        {{ item.createdAt }}
+                        {{formatDateTime(item.createdAt)}}
                     </span>
 
                 </div>
