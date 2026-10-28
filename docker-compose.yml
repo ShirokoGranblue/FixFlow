@@ -45,6 +45,7 @@ services:
     build: 
       dockerfile: DockerFile
       context: ./frontend
+
     restart: unless-stopped
 
     ports:
