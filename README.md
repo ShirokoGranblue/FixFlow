@@ -12,7 +12,7 @@ FixFlow 是一个基于 Spring Boot 和 Vue 3 开发的前后端分离工单管�
 - MySQL 8
 - Sa-Token
 - Spring AOP、Spring Transaction
-- Flyway（数据库版本迁移）
+- Flyway
 
 **前端**
 - Vue 3、TypeScript、Vite
