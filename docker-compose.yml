@@ -27,7 +27,7 @@ services:
     container_name: fixflow-backend
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: DockerFile
     restart: unless-stopped
 
     environment:
@@ -42,7 +42,9 @@ services:
   frontend:
     image: fixflow-frontend:latest
     container_name: fixflow-frontend
-    build: ./frontend
+    build: 
+      dockerfile: DockerFile
+      context: ./frontend
     restart: unless-stopped
 
     ports:
