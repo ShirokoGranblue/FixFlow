@@ -154,11 +154,6 @@ jobs:
           if ($LASTEXITCODE -ne 0) {
             throw 'Compose 配置验证失败'
           }
-            
-      # 确保已有的 MySQL 服务启动，并等待就绪
-      - name: Ensure MySQL running
-        run: |
-          docker compose up -d --no-recreate --wait --wait-timeout 180 mysql
 
       - name: Build frontend and backend
         run: |
@@ -170,6 +165,19 @@ jobs:
 
           if ($LASTEXITCODE -ne 0) {
             throw '镜像构建失败，未执行容器更新'
+          }
+
+      # 确保已有的 MySQL 服务启动，并等待就绪
+      - name: Start MySQL and wait until ready
+        run: |
+          docker compose `
+            --project-name "$env:COMPOSE_PROJECT" `
+            --env-file "$env:DEPLOY_ENV_FILE" `
+            -f docker-compose.yml `
+            up -d --no-deps --wait --wait-timeout 180 mysql
+
+          if ($LASTEXITCODE -ne 0) {
+            throw 'MySQL 启动或健康检查失败，停止后续构建'
           }
 
       - name: Update existing application services
