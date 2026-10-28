@@ -13,7 +13,7 @@ permissions:
 # 同一个分支或 PR 有新提交时，取消旧的运行
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
   backend:
@@ -90,3 +90,96 @@ jobs:
 
       - name: Typecheck and build frontend
         run: npm run build
+
+  deploy-local:
+    name: Deploy to existing local services
+    needs: [backend, frontend]
+
+    # 只有 main 分支的 push 通过 CI 后才部署
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    runs-on: [self-hosted, Windows, X64, fixflow-local]
+    timeout-minutes: 30
+
+    permissions:
+      contents: read
+
+    # 同一时间只允许一次本地部署
+    concurrency:
+      group: fixflow-local-deploy
+      cancel-in-progress: false
+
+    defaults:
+      run:
+        shell: pwsh
+
+    env:
+      COMPOSE_PROJECT: ${{ vars.LOCAL_COMPOSE_PROJECT }}
+      DEPLOY_ENV_FILE: ${{ vars.LOCAL_ENV_FILE }}
+
+    steps:
+      - name: Checkout tested commit
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+
+      - name: Check deployment configuration
+        run: |
+          $ErrorActionPreference = 'Stop'
+
+          if ([string]::IsNullOrWhiteSpace($env:COMPOSE_PROJECT)) {
+            throw '请设置 LOCAL_COMPOSE_PROJECT'
+          }
+
+          if ([string]::IsNullOrWhiteSpace($env:DEPLOY_ENV_FILE)) {
+            throw '请设置 LOCAL_ENV_FILE'
+          }
+
+          if (-not (Test-Path -LiteralPath $env:DEPLOY_ENV_FILE -PathType Leaf)) {
+            throw '找不到本机部署环境文件'
+          }
+
+          docker info --format '{{.OSType}}'
+          if ($LASTEXITCODE -ne 0) {
+            throw '无法连接 Docker 引擎'
+          }
+
+          docker compose `
+            --project-name "$env:COMPOSE_PROJECT" `
+            --env-file "$env:DEPLOY_ENV_FILE" `
+            -f docker-compose.yml `
+            config --quiet
+
+          if ($LASTEXITCODE -ne 0) {
+            throw 'Compose 配置验证失败'
+          }
+            
+      # 确保已有的 MySQL 服务启动，并等待就绪
+      - name: Ensure MySQL running
+        run: |
+          docker compose up -d --no-recreate --wait --wait-timeout 180 mysql
+
+      - name: Build frontend and backend
+        run: |
+          docker compose `
+            --project-name "$env:COMPOSE_PROJECT" `
+            --env-file "$env:DEPLOY_ENV_FILE" `
+            -f docker-compose.yml `
+            build backend frontend
+
+          if ($LASTEXITCODE -ne 0) {
+            throw '镜像构建失败，未执行容器更新'
+          }
+
+      - name: Update existing application services
+        run: |
+          docker compose `
+            --project-name "$env:COMPOSE_PROJECT" `
+            --env-file "$env:DEPLOY_ENV_FILE" `
+            -f docker-compose.yml `
+            up -d --no-deps --wait --wait-timeout 180 backend frontend
+
+          if ($LASTEXITCODE -ne 0) {
+            throw '应用启动检查失败，请查看本机容器状态和日志'
+          }
