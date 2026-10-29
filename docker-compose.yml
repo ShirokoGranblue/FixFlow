@@ -35,6 +35,21 @@ services:
       MYSQL_USER: ${MYSQL_USER:?missing}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:?missing}
 
+    healthcheck:
+      test:
+        - CMD
+        - curl
+        - --fail
+        - --silent
+        - --show-error
+        - --max-time
+        - "4"
+        - http://127.0.0.1:8080/actuator/health/readiness
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 40s
+
     depends_on:
       mysql:
         condition: service_healthy
@@ -50,6 +65,21 @@ services:
 
     ports:
       - "127.0.0.1:8081:80"
+      
+    healthcheck:
+      test:
+        - CMD
+        - wget
+        - -q
+        - -O
+        - /dev/null
+        - -T
+        - "3"
+        - http://127.0.0.1/index.html
+      interval: 5s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
 
     depends_on:
       - backend
