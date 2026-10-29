@@ -1,8 +1,8 @@
 
 # Git 历史和本地配置
 .git
-# .env
-# .env.*
+.env
+.env.*
 !.env.example
 docker-compose.override.yml
 docker/maven/settings.local.xml
