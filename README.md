@@ -89,11 +89,25 @@ FixFlow 是一个基于 Spring Boot 和 Vue 3 开发的前后端分离工单管�
 
 ## 目录说明
 
-- `backend/`：Spring Boot 后端
+- `src/main/java/`：Spring Boot 后端实现
+- `src/main/resources/db/migration/`：Flyway 数据库迁移
+- `src/test/java/`：单元测试和集成测试
 - `frontend/`：Vue 3 前端
-- `compose.yaml`：服务编排
-- `deploy/`：部署相关配置
-- `.env.example`：环境变量示例
+- `.github/workflows/ci.yml`：CI / 本地持续部署
+- `docker-compose.yml`：容器编排
+- `docs/`：架构、性能验证、部署和恢复说明
+- `.env.example`：环境变量示例；`.env` 不应提交
+
+## 工程化与测试
+
+- 后端：`./mvnw verify`（Windows 使用 `mvnw.cmd verify`）。集成测试需要独立的 `fixflow_test` MySQL 数据库。
+- 前端：`cd frontend && npm ci && npm run build`。
+- GitHub Actions：PR 运行前后端检查；`main` push 通过后由 Windows 自托管 Runner 执行部署。
+- 分页：新增 `/api/ticket/my-tickets/page`、`/api/ticket/open/page`、`/api/ticket/assigned/page`，旧列表接口暂时保留。
+- 关闭流程：`RESOLVED` 工单由创建者确认关闭或重新打开，不由处理人代为确认。
+- 版本化部署：CI 将 Docker 镜像标记为提交 SHA；部署失败尝试回滚应用镜像。数据库需要独立备份与迁移兼容性管理。
+
+详细信息请阅读 [架构与权限](docs/architecture.md)、[性能验证](docs/performance-validation.md)、[部署与回滚](docs/deployment-runbook.md)。
 
 ## 开发说明
 
@@ -107,6 +121,6 @@ FixFlow 是一个基于 Spring Boot 和 Vue 3 开发的前后端分离工单管�
 
 更新后执行 `docker compose up -d --build --no-deps frontend backend` 重建这两个服务。本地开发需要重启后端和 Vite。
 
-来源地址回归测试：`mvn '-Dtest=ClientIpTests,UntrustedClientIpTests' test`。
+来源地址回归测试：`./mvnw -Dtest=ClientIpTests,UntrustedClientIpTests test`。
 
 工单状态变化通过后端业务规则校验，前端角色菜单仅负责用户体验，不作为真正的权限安全边界。

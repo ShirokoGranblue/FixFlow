@@ -116,6 +116,8 @@ jobs:
     env:
       COMPOSE_PROJECT: ${{ vars.LOCAL_COMPOSE_PROJECT }}
       DEPLOY_ENV_FILE: ${{ vars.LOCAL_ENV_FILE }}
+      # 同一提交绑定前后端镜像，便于快速回到上个版本。
+      IMAGE_TAG: ${{github.sha}}
 
     steps:
       - name: Checkout tested commit
@@ -180,14 +182,42 @@ jobs:
             throw 'MySQL 启动或健康检查失败，停止后续构建'
           }
 
-      - name: Update existing application services
+      - name: Update existing application services (rollback on failure)
         run: |
+          $ErrorActionPreference = 'Stop'
+          $rollbackTag = "rollback-$env:GITHUB_RUN_ID"
+          $previousBackend = docker inspect --format '{{.Image}}' fixflow-backend 2>$null
+          $backendExists = $LASTEXITCODE -eq 0
+          $previousFrontend = docker inspect --format '{{.Image}}' fixflow-frontend 2>$null
+          $frontendExists = $LASTEXITCODE -eq 0
+          $canRollback = $backendExists -and $frontendExists
+
+          if ($canRollback) {
+            docker image tag "$previousBackend" "fixflow-backend:$rollbackTag"
+            if ($LASTEXITCODE -ne 0) { throw '无法准备后端回滚镜像' }
+            docker image tag "$previousFrontend" "fixflow-frontend:$rollbackTag"
+            if ($LASTEXITCODE -ne 0) { throw '无法准备前端回滚镜像' }
+          }
+
           docker compose `
             --project-name "$env:COMPOSE_PROJECT" `
             --env-file "$env:DEPLOY_ENV_FILE" `
             -f docker-compose.yml `
-            up -d --no-deps --wait --wait-timeout 180 backend frontend
+            up -d --no-deps --no-build --wait --wait-timeout 180 backend frontend
 
           if ($LASTEXITCODE -ne 0) {
-            throw '应用启动检查失败，请查看本机容器状态和日志'
+            Write-Error '新版本启动或健康检查失败，正在尝试回滚应用镜像' -ErrorAction Continue
+            if ($canRollback) {
+              $env:IMAGE_TAG = $rollbackTag
+              docker compose `
+                --project-name "$env:COMPOSE_PROJECT" `
+                --env-file "$env:DEPLOY_ENV_FILE" `
+                -f docker-compose.yml `
+                up -d --no-deps --no-build --wait --wait-timeout 180 backend frontend
+              if ($LASTEXITCODE -ne 0) {
+                throw '新版本发布失败且回滚也失败，需要人工介入'
+              }
+              throw '新版本发布失败，应用镜像已回滚；请检查迁移兼容性与日志'
+            }
+            throw '首次部署失败且没有已运行的旧版本，无法自动回滚'
           }
