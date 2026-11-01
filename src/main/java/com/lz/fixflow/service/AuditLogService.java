@@ -11,7 +11,7 @@ public interface AuditLogService {
 
     PageResult<AuditLog> getAuditLog(long current,long pageSize);
 
-    void saveLog(String userid,
+    void recordAudit(String userid,
                          String action,
                          boolean success,
                          String errorMessage,

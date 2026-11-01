@@ -2,6 +2,7 @@ package com.lz.fixflow.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.lz.fixflow.annotation.Audit;
 import com.lz.fixflow.common.PageResult;
 import com.lz.fixflow.entity.AuditLog;
 import com.lz.fixflow.entity.User;
@@ -29,38 +30,63 @@ public class AuditLogServiceImpl implements AuditLogService {
     @Override
     public PageResult<AuditLog> getAuditLog(long current, long pageSize) {
 
-        long size = Math.min(pageSize,100);
+        long size = Math.min(pageSize, 100);
 
-        Page<AuditLog> page = new Page<>(current,size);
+        Page<AuditLog> page = new Page<>(current, size);
         Page<AuditLog> result = auditLogMapper.selectPage(page,
                 new LambdaQueryWrapper<AuditLog>()
-                        .orderByDesc(AuditLog::getCreatedAt)
-        );
+                        .orderByDesc(AuditLog::getCreatedAt));
 
         return new PageResult<>(
                 result.getRecords(),
                 result.getTotal(),
                 result.getCurrent(),
-                result.getPages(),
-                result.getSize()
-        );
+                result.getSize(),
+                result.getPages());
     }
 
-    @Override
+    @Override 
     @Transactional(propagation = Propagation.REQUIRES_NEW)
-    public void saveLog(String userid,
-                         String action,
-                         boolean success,
-                         String errorMessage,
-                         long durationMs,
-                         String ip,
-                         ProceedingJoinPoint joinPoint){
+    public void recordAudit(
+            String userId,
+            String action,
+            boolean success,
+            String error,
+            long durationMs,
+            String ip,
+            ProceedingJoinPoint joinPoint) {
+
         try {
+            saveLog(
+                    userId,
+                    action,
+                    success,
+                    error,
+                    durationMs,
+                    ip,
+                    joinPoint);
+        } catch (Exception auditError) {
+            log.error(
+                    "审计日志写入失败 action={} success={}",
+                    action,
+                    success,
+                    auditError);
+        }
+    }
+
+    private void saveLog(String userid,
+            String action,
+            boolean success,
+            String errorMessage,
+            long durationMs,
+            String ip,
+            ProceedingJoinPoint joinPoint) {
+
             AuditLog auditLog = new AuditLog();
-            User user = userMapper.selectById(userid);
+            User user = userid == null ? null : userMapper.selectById(userid);
 
             auditLog.setUserId(userid);
-            auditLog.setUsername(user.getUsername());
+            auditLog.setUsername(user != null ? user.getUsername() : userid == null ? "匿名用户" : "未知用户");
             auditLog.setAction(action);
             auditLog.setSuccess(success);
             auditLog.setErrorMessage(errorMessage);
@@ -71,9 +97,5 @@ public class AuditLogServiceImpl implements AuditLogService {
             auditLog.setMethod(joinPoint.getSignature().toShortString());
 
             auditLogMapper.insert(auditLog);
-
-        }catch (Exception e){
-            log.error(e.getMessage());
-        }
     }
 }

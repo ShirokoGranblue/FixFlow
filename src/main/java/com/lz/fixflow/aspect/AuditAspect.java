@@ -1,5 +1,6 @@
 package com.lz.fixflow.aspect;
 
+import cn.dev33.satoken.stp.StpLogic;
 import cn.dev33.satoken.stp.StpUtil;
 import com.lz.fixflow.annotation.Audit;
 import com.lz.fixflow.service.AuditLogService;
@@ -47,7 +48,7 @@ public class AuditAspect {
             result = joinPoint.proceed();
 
         }catch(Throwable e){
-            auditLogService.saveLog(
+            auditLogService.recordAudit(
                 userid,
                 audit.value(),
                 false,
@@ -58,8 +59,11 @@ public class AuditAspect {
             );
             throw e;
         }
-        auditLogService.saveLog(
-            userid,
+        
+        String actorId = userid == null && StpUtil.isLogin() ? StpUtil.getLoginIdAsString() : userid;
+
+        auditLogService.recordAudit(
+            actorId,
             audit.value(),
             true,
             null,
