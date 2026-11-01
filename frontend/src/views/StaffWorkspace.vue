@@ -2,7 +2,7 @@
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { getAssignedTickets, getOpenTickets, handleTicket } from '../api/ticket'
+import { getAssignedTickets, getAssignedTicketsPage, getOpenTickets, getOpenTicketsPage, handleTicket } from '../api/ticket'
 import type { TicketVO } from '../api/ticket'
 
 const router = useRouter()
@@ -11,13 +11,24 @@ const openTickets = ref<TicketVO[]>([])
 const assignedTickets = ref<TicketVO[]>([])
 const handleLoadingId = ref<string | null>(null)
 
+const pageSize = 10
+const openPage = ref(1)
+const assignedPage = ref(1)
+
+const openTotal = ref(0)
+const assignedTotal = ref(0)
+
 async function loadOpenTickets() {
 
-    const response = await getOpenTickets()
+    const response = await getOpenTicketsPage({
+        current:openPage.value,
+        pageSize
+    })
     const result = response.data
 
     if (result.code === 200) {
-        openTickets.value = result.data
+        openTickets.value = result.data.records
+        openTotal.value = result.data.total
     }
     else {
         throw new Error(result.message)
@@ -26,11 +37,15 @@ async function loadOpenTickets() {
 
 async function loadAssignedTickets() {
 
-    const response = await getAssignedTickets()
+    const response = await getAssignedTicketsPage({
+        current:assignedPage.value,
+        pageSize
+    })
     const result = response.data
 
     if (result.code === 200) {
-        assignedTickets.value = result.data
+        assignedTickets.value = result.data.records
+        assignedTotal.value = result.data.total
     }
     else {
         throw new Error(result.message)
@@ -90,6 +105,16 @@ async function handleClaim(id:string){
     }finally{
         handleLoadingId.value = null
     }
+}
+
+function changeOpenPage(page:number){
+    openPage.value = page
+    loadOpenTickets();
+}
+
+function changeAssignedPage(page:number){
+    assignedPage.value = page
+    loadAssignedTickets();
 }
 
 onMounted(() => {
@@ -155,6 +180,17 @@ onMounted(() => {
 
             </el-table>
 
+            <el-pagination
+                v-if="openTotal > pageSize"
+                class="ticket-pagination"
+                background
+                layout="prev, pager, next, total"
+                :total="openTotal"
+                :page-size="pageSize"
+                :current-page="openPage"
+                @current-change="changeOpenPage"
+            />
+
         </section>
     <section class="section">
 
@@ -204,6 +240,17 @@ onMounted(() => {
         </el-table-column>
 
       </el-table>
+
+        <el-pagination
+            v-if="assignedTotal > pageSize"
+            class="ticket-pagination"
+            background
+            layout="prev, pager, next, total"
+            :total="assignedTotal"
+            :page-size="pageSize"
+            :current-page="assignedPage"
+            @current-change="changeAssignedPage"
+        />
 
     </section>
 

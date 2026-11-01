@@ -69,7 +69,7 @@ const canClose = computed(()=>{
     if(!detail.value?.ticket||!userStore.user){
         return false
     }
-    return isAssignee.value && detail.value.ticket.status === 'RESOLVED'
+    return isCreator.value && detail.value.ticket.status === 'RESOLVED'
 })
 const canReopen = computed(()=>{
     if(!detail.value?.ticket||!userStore.user){
