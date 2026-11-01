@@ -18,18 +18,17 @@ import com.lz.fixflow.vo.TicketHistoryVO;
 import com.lz.fixflow.vo.TicketListItemVO;
 import com.lz.fixflow.vo.TicketVO;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import lombok.RequiredArgsConstructor;
 
 import org.springframework.format.annotation.DateTimeFormat;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.http.RequestEntity;
-import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+
 
 @RestController
 @RequiredArgsConstructor
@@ -85,7 +84,6 @@ public class TicketController {
     }
 
     @PostMapping("/{id}/close")
-    @SaCheckRole(value = {"STAFF","ADMIN"},mode = SaMode.OR)
     public Result<TicketVO> closeTicket(@PathVariable String id) {
         return Result.success(ticketService.closeTicket(id));
     }
@@ -144,4 +142,30 @@ public class TicketController {
                                                         cursorTime, 
                                                         cursorId));
     }
+
+    @GetMapping("/my-tickets/page")
+    public Result<PageResult<TicketVO>> myTicketPage(@RequestParam(defaultValue = "1") 
+                                                    @Min(1) @Valid long current, 
+                                                    @RequestParam(defaultValue = "10") 
+                                                    @Min(1) @Max(100) @Valid long pageSize) {
+        return Result.success(ticketService.showTicketsPage(current, pageSize));
+    }
+
+    @GetMapping("/open/page")
+    @SaCheckRole(value = {"STAFF","ADMIN"},mode = SaMode.OR)
+    public Result<PageResult<TicketVO>> openTicketPage(@RequestParam(defaultValue = "1") 
+                                                    @Min(1) @Valid long current, 
+                                                    @RequestParam(defaultValue = "10") 
+                                                    @Min(1) @Max(100) @Valid long pageSize) {
+        return Result.success(ticketService.getOpenTicketsPage(current, pageSize));
+    }
+    
+    @GetMapping("/assigned/page")
+    public Result<PageResult<TicketVO>> assignedTicketPage(@RequestParam(defaultValue = "1") 
+                                                    @Min(1) @Valid long current, 
+                                                    @RequestParam(defaultValue = "10") 
+                                                    @Min(1) @Max(100) @Valid long pageSize) {
+        return Result.success(ticketService.getAssignedTicketsPage(current, pageSize));
+    } 
+    
 }

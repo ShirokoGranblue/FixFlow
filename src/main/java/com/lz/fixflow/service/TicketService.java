@@ -41,4 +41,19 @@ public interface TicketService {
     TicketVO assignTicket(String id ,TicketAssignDTO dto);
 
     TicketDetailVO getTicketDetail(String id);
+
+    PageResult<TicketVO> showTicketsPage(
+        long current,
+        long pageSize
+    );
+
+    PageResult<TicketVO> getOpenTicketsPage(
+        long current,
+        long pageSize
+    );
+
+    PageResult<TicketVO> getAssignedTicketsPage(
+        long current,
+        long pageSize
+    );
 }
