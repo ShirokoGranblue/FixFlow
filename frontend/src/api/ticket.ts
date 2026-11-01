@@ -18,7 +18,7 @@ export interface TicketVO{
 
     createdAt : string
     updatedAt : string
-    resovledAt : string | null
+    resolvedAt : string | null
 }
 
 export interface TicketHistoryVO{
@@ -74,6 +74,11 @@ export interface TicketQuery{
     categoryId?:number | ''
 }
 
+export interface TicketPageParams{
+    current:number
+    pageSize:number
+}
+
 export interface TicketAssignDTO{
     assigneeId:string
 }
@@ -104,7 +109,7 @@ export function createTicket(data:TicketCreateDTO){
 export function getComment(id:string){
     return request.get<Result<TicketCommentVO>>
     (
-        `/${id}/comment`
+        `/ticket/${id}/comment`
     )
 }
 
@@ -167,5 +172,23 @@ export function assignTicket(id:string,data:TicketAssignDTO){
     return request.post<Result<TicketVO>>(
         `/ticket/${id}/assign`, 
         data
+    )
+}
+
+export function getMyTicketsPage(params:TicketPageParams){
+    return request.get<Result<PageResult<TicketVO>>>(
+        '/ticket/my-ticket/page',{params}
+    )
+}
+
+export function getOpenTicketsPage(params:TicketPageParams){
+    return request.get<Result<PageResult<TicketVO>>>(
+        '/ticket/open/page', {params}
+    )
+}
+
+export function getAssignedTicketsPage(params:TicketPageParams){
+    return request.get<Result<PageResult<TicketVO>>>(
+        '/ticket/assigned/page',{params}
     )
 }

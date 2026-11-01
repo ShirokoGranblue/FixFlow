@@ -130,8 +130,8 @@ router.beforeEach(
     }
 
     if(!userStore.user){
-        const success = await userStore.restoreLogin()
         try{
+            const success = await userStore.restoreLogin()
             if(!success){
                 ElMessage.warning('请先登录')
                 return '/user/login'
@@ -139,7 +139,9 @@ router.beforeEach(
         }catch{
             if(localStorage.getItem('tokenValue')){
                 ElMessage.error('暂时无法验证登录状态，请稍后重试')
+                return false
             }
+            return '/user/login'
         }
     }
 
