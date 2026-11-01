@@ -175,6 +175,59 @@ class TicketLogicTests {
     }
 
     @Test
+    void openTicketsBatchFetchCreatorsWithoutNPlusOne() {
+        when(tickets.selectList(any(Wrapper.class))).thenReturn(List.of(ticket));
+        when(users.selectBatchIds(anyCollection())).thenReturn(List.of(accounts.get("creator")));
+        assertEquals(ticket.getId(), service.getOpenTickets().getFirst().getId());
+        verify(users, times(1)).selectBatchIds(anyCollection());
+        verify(users, never()).selectById(anyString());
+    }
+
+    @Test
+    void paginatedOpenQueueKeepsPageMetadata() {
+        when(tickets.selectPage(any(Page.class), any(Wrapper.class))).thenAnswer(inv -> {
+            Page<Ticket> page = inv.getArgument(0);
+            page.setRecords(List.of(ticket));
+            page.setTotal(21);
+            return page;
+        });
+        var result = service.getOpenTicketsPage(2, 10);
+        assertEquals(1, result.getRecords().size());
+        assertEquals(2, result.getCurrent());
+        assertEquals(10, result.getPageSize());
+        assertEquals(3, result.getPages());
+    }
+
+    @Test
+    void creatorCanConfirmCloseAfterResolved() {
+        actor = "creator";
+        ticket.setStatus("RESOLVED");
+        ticket.setAssigneeId("staff");
+        when(tickets.update(isNull(), any(Wrapper.class))).thenReturn(1);
+        assertEquals(ticket.getId(), service.closeTicket(ticket.getId()).getId());
+        verify(historyService).recordHistory(ticket.getId(), "creator", "CLOSE", "RESOLVED", "CLOSED");
+    }
+
+    @Test
+    void assigneeCannotConfirmCloseForCreator() {
+        actor = "staff";
+        ticket.setStatus("RESOLVED");
+        ticket.setAssigneeId("staff");
+        assertThrows(BusinessException.class, () -> service.closeTicket(ticket.getId()));
+        verify(tickets, never()).update(isNull(), any(Wrapper.class));
+        verifyNoInteractions(historyService);
+    }
+
+    @Test
+    void closeConflictsWithConcurrentReopen() {
+        actor = "creator";
+        ticket.setStatus("RESOLVED");
+        when(tickets.update(isNull(), any(Wrapper.class))).thenReturn(0);
+        assertThrows(BusinessException.class, () -> service.closeTicket(ticket.getId()));
+        verifyNoInteractions(historyService);
+    }
+
+    @Test
     void detailPreservesNullAndHistoricalResolvedTime() {
         assertNull(service.showTicket(ticket.getId()).getResolvedAt());
         LocalDateTime resolved = LocalDateTime.of(2026, 9, 1, 12, 0);
