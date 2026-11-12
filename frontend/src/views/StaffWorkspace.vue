@@ -2,7 +2,7 @@
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { getAssignedTickets, getAssignedTicketsPage, getOpenTickets, getOpenTicketsPage, handleTicket } from '../api/ticket'
+import { getAssignedTicketsPage, getOpenTicketsPage, handleTicket } from '../api/ticket'
 import type { TicketVO } from '../api/ticket'
 
 const router = useRouter()

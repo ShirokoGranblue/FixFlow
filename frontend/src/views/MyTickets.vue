@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { getMyTickets, getMyTicketsPage } from '../api/ticket.ts';
+import { getMyTicketsPage } from '../api/ticket.ts';
 import type { TicketVO } from '../api/ticket.ts';
 import { useRouter } from 'vue-router';
 import TicketPriorityTag from '../component/TicketPriorityTag.vue'
