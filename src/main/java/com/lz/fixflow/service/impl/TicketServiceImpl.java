@@ -137,8 +137,8 @@ public class TicketServiceImpl implements TicketService {
                                       .filter(Objects::nonNull)
                                       .distinct()
                                       .toList();
-        List<Category> categories = categoryIds.isEmpty() ? categoryMapper.selectBatchIds(categoryIds) : List.of();
-        List<User> users = userIds.isEmpty() ? userMapper.selectBatchIds(userIds) : List.of();
+        List<Category> categories = categoryIds.isEmpty() ? List.of() : categoryMapper.selectBatchIds(categoryIds);
+        List<User> users = userIds.isEmpty() ? List.of() : userMapper.selectBatchIds(userIds);
         
         Map<Long,Category> categoryMap = categories!=null ? categories.stream()
                                                    .collect(Collectors.toMap(Category::getId,c->c,(a,b)->a)) : Map.of();

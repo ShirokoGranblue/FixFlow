@@ -48,7 +48,8 @@ public class AuditAspect {
             result = joinPoint.proceed();
 
         }catch(Throwable e){
-            auditLogService.recordAudit(
+            try{
+                auditLogService.recordAudit(
                 userid,
                 audit.value(),
                 false,
@@ -57,7 +58,11 @@ public class AuditAspect {
                 getIp(request),
                 joinPoint
             );
-            throw e;
+            }catch(Exception auditError){
+                log.error("业务失败后写入审计日志失败", auditError);
+            }
+
+            throw e;      
         }
         
         String actorId = userid == null && StpUtil.isLogin() ? StpUtil.getLoginIdAsString() : userid;

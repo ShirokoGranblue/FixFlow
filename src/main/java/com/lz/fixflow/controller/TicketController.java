@@ -161,6 +161,7 @@ public class TicketController {
     }
     
     @GetMapping("/assigned/page")
+    @SaCheckRole(value = {"ADMIN","STAFF"},mode = SaMode.OR)
     public Result<PageResult<TicketVO>> assignedTicketPage(@RequestParam(defaultValue = "1") 
                                                     @Min(1) @Valid long current, 
                                                     @RequestParam(defaultValue = "10") 
