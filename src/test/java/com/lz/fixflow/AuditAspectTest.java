@@ -76,6 +76,49 @@ class AuditAspectTest {
     }
 
     @Test
+    @DisplayName("匿名注册或登录失败时仍记录匿名审计")
+    void anonymousOperationIsAudited() throws Throwable {
+        StpUtil.setStpLogic(new StpLogic(originalLogic.getLoginType()) {
+            @Override public boolean isLogin() { return false; }
+        });
+        when(joinPoint.proceed()).thenThrow(new BusinessException("登录失败"));
+        assertThrows(BusinessException.class, () -> auditAspect.Around(joinPoint, audit));
+        verify(auditLogService).recordAudit(isNull(), eq("工单已受理"), eq(false),
+                eq("登录失败"), anyLong(), eq("127.0.0.1"), same(joinPoint));
+    }
+
+    @Test
+    @DisplayName("登录成功后补全操作人 ID")
+    void loginSuccessAuditUsesNewlyAuthenticatedUserId() throws Throwable {
+        class ChangingLoginLogic extends StpLogic {
+            private boolean loggedIn;
+            ChangingLoginLogic() { super(originalLogic.getLoginType()); }
+            @Override public boolean isLogin() { return loggedIn; }
+            @Override public String getLoginIdAsString() { return STAFF_ID; }
+        }
+        ChangingLoginLogic logic = new ChangingLoginLogic();
+        StpUtil.setStpLogic(logic);
+        when(joinPoint.proceed()).thenAnswer(invocation -> {
+            logic.loggedIn = true;
+            return "success";
+        });
+        assertEquals("success", auditAspect.Around(joinPoint, audit));
+        verify(auditLogService).recordAudit(eq(STAFF_ID), eq("工单已受理"), eq(true),
+                isNull(), anyLong(), eq("127.0.0.1"), same(joinPoint));
+    }
+
+    @Test
+    @DisplayName("审计数据库异常不会掩盖业务异常")
+    void auditFailureDoesNotReplaceOriginalFailure() throws Throwable {
+        BusinessException businessError = new BusinessException("工单处理失败");
+        when(joinPoint.proceed()).thenThrow(businessError);
+        doThrow(new IllegalStateException("审计库不可用")).when(auditLogService)
+                .recordAudit(any(), any(), eq(false), any(), anyLong(), any(), any());
+        assertSame(businessError,
+                assertThrows(BusinessException.class, () -> auditAspect.Around(joinPoint, audit)));
+    }
+
+    @Test
     @DisplayName("被审计业务成功：返回原结果，并记录 success=true")
     void success_shouldWriteSuccessAudit() throws Throwable {
         // Arrange：模拟被拦截的业务方法返回结果。
@@ -88,7 +131,7 @@ class AuditAspectTest {
         assertEquals("接单成功", result);
 
         verify(joinPoint).proceed();
-        verify(auditLogService).saveLog(
+        verify(auditLogService).recordAudit(
                 eq(STAFF_ID), eq("工单已受理"), eq(true), isNull(),
                 anyLong(), eq("127.0.0.1"), same(joinPoint));
     }
@@ -108,7 +151,7 @@ class AuditAspectTest {
         assertSame(expected, caught);
 
         verify(joinPoint).proceed();
-        verify(auditLogService).saveLog(
+        verify(auditLogService).recordAudit(
                 eq(STAFF_ID), eq("工单已受理"), eq(false),
                 eq("工单不存在或已被处理"), anyLong(),
                 eq("127.0.0.1"), same(joinPoint));

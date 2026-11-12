@@ -39,3 +39,5 @@ build/
 # Local Docker build proxy settings
 /docker-compose.override.yml
 /docker/maven/settings.local.xml
+
+backups/

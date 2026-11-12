@@ -73,11 +73,12 @@ class AuthenticationTests {
         return Stream.of(
                 new Endpoint("GET", "/api/dashboard", "", false),
                 new Endpoint("GET", "/api/ticket/open", "", false),
+                new Endpoint("GET", "/api/ticket/open/page", "", false),
+                new Endpoint("GET", "/api/ticket/assigned/page", "", false),
                 new Endpoint("GET", "/api/ticket/assigned", "", false),
                 new Endpoint("GET", "/api/ticket/manage", "", false),
                 new Endpoint("POST", "/api/ticket/ticket-id/handle", "", false),
                 new Endpoint("POST", "/api/ticket/ticket-id/resolve", "", false),
-                new Endpoint("POST", "/api/ticket/ticket-id/close", "", false),
                 new Endpoint("POST", "/api/ticket/ticket-id/assign", "{\"assignId\":\"staff-id\"}", true),
                 new Endpoint("GET", "/api/admin/staff", "", true),
                 new Endpoint("POST", "/api/admin/user-id/role", "{\"role\":\"STAFF\"}", true),
@@ -89,6 +90,8 @@ class AuthenticationTests {
         return Stream.of(
                 new Endpoint("GET", "/api/category", "", false),
                 new Endpoint("GET", "/api/ticket/my-tickets", "", false),
+                new Endpoint("GET", "/api/ticket/my-tickets/page", "", false),
+                new Endpoint("POST", "/api/ticket/ticket-id/close", "", false),
                 new Endpoint("GET", "/api/ticket/ticket-id", "", false),
                 new Endpoint("POST", "/api/ticket/create",
                         "{\"title\":\"测试工单\",\"description\":\"测试描述\",\"categoryId\":1}", false),

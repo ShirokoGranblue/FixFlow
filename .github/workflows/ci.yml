@@ -116,6 +116,8 @@ jobs:
     env:
       COMPOSE_PROJECT: ${{ vars.LOCAL_COMPOSE_PROJECT }}
       DEPLOY_ENV_FILE: ${{ vars.LOCAL_ENV_FILE }}
+      # 同一提交绑定前后端镜像，便于快速回到上个版本。
+      IMAGE_TAG: ${{github.sha}}
 
     steps:
       - name: Checkout tested commit
@@ -180,14 +182,91 @@ jobs:
             throw 'MySQL 启动或健康检查失败，停止后续构建'
           }
 
-      - name: Update existing application services
+      - name: Update existing application services (rollback on failure)
         run: |
-          docker compose `
-            --project-name "$env:COMPOSE_PROJECT" `
-            --env-file "$env:DEPLOY_ENV_FILE" `
-            -f docker-compose.yml `
-            up -d --no-deps --wait --wait-timeout 180 backend frontend
+          $ErrorActionPreference = 'Stop'
+          $rollbackTag = "rollback-$env:GITHUB_RUN_ID"
 
-          if ($LASTEXITCODE -ne 0) {
-            throw '应用启动检查失败，请查看本机容器状态和日志'
+          $composeArgs = @(
+              '--project-name', $env:COMPOSE_PROJECT,
+              '--env-file', $env:DEPLOY_ENV_FILE,
+              '-f', 'docker-compose.yml'
+          )
+
+          $backendId = docker compose @composeArgs `
+              ps --status running -q backend
+
+          $frontendId = docker compose @composeArgs `
+              ps --status running -q frontend
+
+          $canRollback = (
+              -not [string]::IsNullOrWhiteSpace($backendId)
+          ) -and (
+              -not [string]::IsNullOrWhiteSpace($frontendId)
+          )
+
+          if ($canRollback) {
+              $previousBackend = docker inspect `
+                  --format '{{.Image}}' $backendId
+
+              docker image tag "$previousBackend" "fixflow-backend:$rollbackTag"
+
+              if ($LASTEXITCODE -ne 0) {
+                  throw '读取旧后端镜像失败'
+              }
+
+              $previousFrontend = docker inspect `
+                  --format '{{.Image}}' $frontendId
+
+              docker image tag "$previousFrontend" "fixflow-frontend:$rollbackTag"
+
+              if ($LASTEXITCODE -ne 0) {
+                  throw '读取旧前端镜像失败'
+              }
+          }
+              
+          try {
+              # 部署新版本
+              docker compose @composeArgs `
+                  up -d --no-deps --no-build `
+                  --wait --wait-timeout 180 `
+                  backend frontend
+
+              if ($LASTEXITCODE -ne 0) {
+                  throw '新版本容器启动失败'
+              }
+
+              # 验证实际访问链路
+              & .\script\smoke-test.ps1
+
+              if (-not $?) {
+                  throw '冒烟测试执行失败'
+              }
+
+              Write-Host '新版本发布成功'
+          }
+          catch {
+              Write-Warning "发布失败：$_"
+
+              if (-not $canRollback) {
+                  throw '没有可恢复的旧版本，需要人工处理'
+              }
+
+              # 切换到先前保存的旧镜像标签
+              $env:IMAGE_TAG = $rollbackTag
+
+              docker compose @composeArgs `
+                  up -d --no-deps --no-build `
+                  --wait --wait-timeout 180 `
+                  backend frontend
+
+              if ($LASTEXITCODE -ne 0) {
+                  throw '新版本失败，旧版本回滚也失败'
+              }
+
+              # 回滚后再次检查
+              & .\script\smoke-test.ps1
+
+              Write-Warning '旧版本已恢复并通过冒烟测试'
+              throw '本次新版本发布失败，已完成应用回滚'
           }

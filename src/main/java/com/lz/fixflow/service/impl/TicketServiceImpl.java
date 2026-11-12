@@ -26,11 +26,11 @@ import com.lz.fixflow.vo.TicketHistoryVO;
 import com.lz.fixflow.vo.TicketVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 @Service
@@ -71,17 +71,17 @@ public class TicketServiceImpl implements TicketService {
 
         return vo;
     }
-    private TicketVO convertTicketToVO(Ticket entity,Map<Long ,Category> categoryMap) {
+    private TicketVO convertTicketToVO(Ticket entity,
+                                        Map<Long ,Category> categoryMap,
+                                        Map<String, User> userMap) {
 
         TicketVO vo = new TicketVO();
+
         Category category = categoryMap.get(entity.getCategoryId());
-        User user = userMapper.selectById(entity.getCreatorId());
+        User user = userMap.get(entity.getCreatorId());
 
         vo.setCategoryId(entity.getCategoryId());
-
-        if(category != null) {
-            vo.setCategoryName(category.getName());
-        }
+        vo.setCategoryName(category!=null ? category.getName() : null);
 
         vo.setId(entity.getId());
         vo.setTitle(entity.getTitle());
@@ -89,7 +89,7 @@ public class TicketServiceImpl implements TicketService {
         vo.setPriority(entity.getPriority());
         vo.setStatus(entity.getStatus());
         vo.setCreatorId(entity.getCreatorId());
-        vo.setCreatorName(user.getUsername());
+        vo.setCreatorName(user!=null ? user.getUsername() : null);
         vo.setCreatedAt(entity.getCreatedAt());
         vo.setUpdatedAt(entity.getUpdatedAt());
         vo.setResolvedAt(entity.getResolvedAt());
@@ -121,6 +121,40 @@ public class TicketServiceImpl implements TicketService {
         vo.setOperatorid(ticketHistory.getOperatorId());
 
         return vo;
+    }
+    private List<TicketVO> mapTicketList(List<Ticket> tickets){
+        if (tickets==null || tickets.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> categoryIds = tickets.stream()  
+                                        .map(Ticket::getCategoryId)
+                                        .filter(Objects::nonNull)
+                                        .distinct()
+                                        .toList();
+        List<String> userIds = tickets.stream()
+                                      .map(Ticket::getCreatorId)
+                                      .filter(Objects::nonNull)
+                                      .distinct()
+                                      .toList();
+        List<Category> categories = categoryIds.isEmpty() ? List.of() : categoryMapper.selectBatchIds(categoryIds);
+        List<User> users = userIds.isEmpty() ? List.of() : userMapper.selectBatchIds(userIds);
+        
+        Map<Long,Category> categoryMap = categories!=null ? categories.stream()
+                                                   .collect(Collectors.toMap(Category::getId,c->c,(a,b)->a)) : Map.of();
+        Map<String,User> userMap = users!=null ? users.stream()
+                                                      .collect(Collectors.toMap(User::getId,u->u,(a,b)->a)) : Map.of();
+
+        return tickets.stream()
+                        .map(t-> convertTicketToVO(t, categoryMap, userMap))
+                        .toList();
+    }
+    private PageResult<TicketVO> toPageResult(Page<Ticket> page){
+        return new PageResult<>(mapTicketList(page.getRecords()),
+                                    page.getTotal(), 
+                                    page.getCurrent(), 
+                                    page.getSize(), 
+                                    page.getPages());
     }
 
     @Override
@@ -208,15 +242,13 @@ public class TicketServiceImpl implements TicketService {
 
         String userid = StpUtil.getLoginIdAsString();
 
-        User user = userMapper.selectById(userid);
-
         permissionService.requireTicketAccess(userid,ticketMapper.selectById(id));
 
         int row = ticketMapper.update(
                 new LambdaUpdateWrapper<Ticket>()
                         .eq(Ticket::getId,id)
                         .eq(Ticket::getStatus,TicketStatus.RESOLVED.getValue())
-                        .eq(Ticket::getCreatorId,user.getId())
+                        .eq(Ticket::getCreatorId,userid)
                         .isNotNull(Ticket::getAssigneeId)
                         .set(Ticket::getStatus,TicketStatus.IN_PROGRESS.getValue())
                         .set(Ticket::getUpdatedAt,LocalDateTime.now())
@@ -252,29 +284,7 @@ public class TicketServiceImpl implements TicketService {
                 .orderByDesc(Ticket::getCreatedAt)
         );
 
-        if(list == null || list.isEmpty()){
-            throw new BusinessException(ErrorCode.BUSINESS_ERROR, "当前无工单");
-        }
-
-        List<Long> categoryIds = list.stream()
-                .map(Ticket::getCategoryId)
-                .distinct()
-                .toList();
-
-        List<Category> categories;
-
-        if (categoryIds.isEmpty()){
-            categories = List.of();
-        }else{
-            categories = categoryMapper.selectBatchIds(categoryIds);
-        }
-
-        Map<Long,Category> categoryMap = categories.stream()
-                .collect(Collectors.toMap(Category::getId, category->category));
-
-        return list.stream()
-                .map(ticket->convertTicketToVO(ticket,categoryMap))
-                .toList();
+        return mapTicketList(list);
     }
 
     @Override
@@ -302,28 +312,7 @@ public class TicketServiceImpl implements TicketService {
                     .orderByAsc(Ticket::getCreatedAt)
         );
 
-        if (list==null|| list.isEmpty()){
-            return List.of();
-        }
-
-        List<Long> categoryIds = list.stream()
-                .map(Ticket::getCategoryId)
-                .distinct()
-                .toList();
-
-        List<Category> categories;
-        if (categoryIds.isEmpty()){
-            categories = List.of();
-        }else{
-            categories = categoryMapper.selectBatchIds(categoryIds);
-        }
-
-        Map<Long, Category> categoryMap = categories.stream()
-                .collect(Collectors.toMap(Category::getId, category->category));
-
-        return list.stream()
-                .map(ticket -> convertTicketToVO(ticket,categoryMap))
-                .toList();
+        return mapTicketList(list);
     }
 
     @Override
@@ -373,28 +362,7 @@ public class TicketServiceImpl implements TicketService {
                         .orderByDesc(Ticket::getUpdatedAt)
         );
 
-        if (list==null|| list.isEmpty()){
-            return List.of();
-        }
-
-        List<Long> categoryIds = list.stream()
-                .map(Ticket::getCategoryId)
-                .distinct()
-                .toList();
-
-        List<Category> categories;
-        if (categoryIds.isEmpty()){
-            categories = List.of();
-        }else{
-            categories = categoryMapper.selectBatchIds(categoryIds);
-        }
-
-        Map<Long,Category> categoryMap = categories.stream()
-                .collect(Collectors.toMap(Category::getId, category->category));
-
-        return list.stream()
-                .map(ticket->convertTicketToVO(ticket,categoryMap))
-                .toList();
+        return mapTicketList(list);
     }
 
     @Override
@@ -439,26 +407,27 @@ public class TicketServiceImpl implements TicketService {
     public TicketVO closeTicket(String id) {
 
         String userid = StpUtil.getLoginIdAsString();
-        User user  = userMapper.selectById(userid);
+        Ticket existing = ticketMapper.selectById(id);
 
-        if (user==null) {
-            throw new BusinessException(ErrorCode.NOT_FOUND, "用户不存在");
+        if(existing == null){
+            throw new BusinessException(ErrorCode.NOT_FOUND,"工单不存在");
+        }
+        if(!existing.getCreatorId().equals(userid)){
+            throw new BusinessException(ErrorCode.FORBIDDEN,"只有创建者可以关闭工单");
         }
 
-            int row = ticketMapper.update(null,
+        int row = ticketMapper.update(null,
                 new LambdaUpdateWrapper<Ticket>()
                         .eq(Ticket::getId,id)
                         .eq(Ticket::getStatus,TicketStatus.RESOLVED.getValue())
-                        .eq(Ticket::getAssigneeId,userid)
+                        .eq(Ticket::getCreatorId,userid)
                         .set(Ticket::getStatus,TicketStatus.CLOSED.getValue())
                         .set(Ticket::getUpdatedAt,LocalDateTime.now())
             );
 
         if(row == 0){
-            throw new BusinessException(ErrorCode.CONFLICT, "工单不存在或当前状态无法关闭");
+            throw new BusinessException(ErrorCode.CONFLICT,"只有待确认的工单可以关闭");
         }
-
-        Ticket ticket = ticketMapper.selectById(id);
 
         ticketHistoryService.recordHistory(
                 id,
@@ -467,7 +436,8 @@ public class TicketServiceImpl implements TicketService {
                 TicketStatus.RESOLVED.getValue(),
                 TicketStatus.CLOSED.getValue()
         );
-
+        
+        Ticket ticket = ticketMapper.selectById(id);
         Category category = categoryMapper.selectById(ticket.getCategoryId());
 
         return convertToVO(ticket,category);
@@ -544,34 +514,7 @@ public class TicketServiceImpl implements TicketService {
 
         Page<Ticket> result = ticketMapper.selectPage(page, wrapper);
 
-        List<Ticket> tickets = result.getRecords();
-        List<Long> categoryIds = tickets.stream()
-                .map(Ticket::getCategoryId)
-                .distinct()
-                .toList();
-
-        List<Category> categories;
-        
-        if (categoryIds.isEmpty()) {
-            categories = List.of();
-        }else {
-            categories = categoryMapper.selectBatchIds(categoryIds);
-        }
-
-        Map<Long,Category> categoryMap = categories.stream()
-                .collect(Collectors.toMap(Category::getId,category -> category));
-
-        List<TicketVO> ticketVO = tickets.stream()
-                .map(ticket -> convertTicketToVO(ticket,categoryMap))
-                .toList();
-
-        return new PageResult<>(
-                ticketVO,
-                result.getTotal(),
-                result.getCurrent(),
-                result.getSize(),
-                result.getPages()
-        );
+        return toPageResult(result);
     }
 
     @Override
@@ -656,5 +599,51 @@ public class TicketServiceImpl implements TicketService {
         detail.setTicketHistory(historyVO);
 
         return detail;
+    }
+
+    @Override
+    public PageResult<TicketVO> showTicketsPage(long current , long pageSize){
+        String userId = StpUtil.getLoginIdAsString();
+
+        Page<Ticket> page = new Page<>(current,pageSize);
+        Page<Ticket> result = ticketMapper.selectPage(page, 
+            new LambdaQueryWrapper<Ticket>()
+                    .eq(Ticket::getCreatorId, userId)
+                    .orderByDesc(Ticket::getCreatedAt)
+                    .orderByDesc(Ticket::getId)
+        );
+
+        return toPageResult(result);
+    }
+
+    @Override 
+    public PageResult<TicketVO> getOpenTicketsPage(long current,long pageSize){
+
+        Page<Ticket> page = new Page<>(current,pageSize);
+        Page<Ticket> result = ticketMapper.selectPage(page,
+            new LambdaQueryWrapper<Ticket>()
+                    .eq(Ticket::getStatus, TicketStatus.OPEN.getValue())
+                    .isNull(Ticket::getAssigneeId)
+                    .orderByDesc(Ticket::getCreatedAt)
+                    .orderByDesc(Ticket::getId)
+        );
+
+        return toPageResult(result);
+    }
+
+    @Override
+    public PageResult<TicketVO> getAssignedTicketsPage(long current,long pageSize){
+        String userId = StpUtil.getLoginIdAsString();
+
+        Page<Ticket> page = new Page<>(current,pageSize);
+        Page<Ticket> result = ticketMapper.selectPage(page, 
+            new LambdaQueryWrapper<Ticket>()
+                    .ne(Ticket::getStatus, TicketStatus.OPEN.getValue())
+                    .eq(Ticket::getAssigneeId,userId)
+                    .orderByDesc(Ticket::getUpdatedAt)
+                    .orderByDesc(Ticket::getId)
+        );
+
+        return toPageResult(result);
     }
 }

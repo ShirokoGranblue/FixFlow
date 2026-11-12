@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue';
-import { getMyTickets } from '../api/ticket.ts';
+import { getMyTicketsPage } from '../api/ticket.ts';
 import type { TicketVO } from '../api/ticket.ts';
 import { useRouter } from 'vue-router';
 import TicketPriorityTag from '../component/TicketPriorityTag.vue'
@@ -12,20 +12,34 @@ import { getRequestError } from '../utils/requestError.ts'
 const router = useRouter();
 const tickets = ref<TicketVO[]>([]);
 const loading = ref(false);
+const currentPage = ref(1)
+const pageSize = 10
+const total = ref(0)
 
 async function loadTickets() {
   loading.value = true;
 
   try {
-    const response = await getMyTickets();
+    const response = await getMyTicketsPage({
+                            current:currentPage.value,
+                            pageSize
+                          });
+
     if (response.data.code === 200) {
-      tickets.value = response.data.data;
+      tickets.value = response.data.data.records;
+      total.value = response.data.data.total;
     }
+
   } catch (error) {
     ElMessage.error(getRequestError(error, '工单加载失败'));
   } finally {
     loading.value = false;
   }
+}
+
+function changePage(page:number){
+  currentPage.value = page
+  loadTickets();
 }
 
 function openTicket(id: string) {
@@ -87,6 +101,17 @@ onMounted(() => {
           </div>
       </div>
     </div>
+    
+    <el-pagination
+        v-if="total > pageSize"
+        class="ticket-pagination"
+        background
+        layout="prev, pager, next, total"
+        :total="total"
+        :page-size="pageSize"
+        :current-page="currentPage"
+        @current-change="changePage"
+    />
 
 </template>
 
