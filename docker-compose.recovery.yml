@@ -1,0 +1,4 @@
+services:
+  backend:
+    environment:
+      SPRING_DATASOURCE_URL: "jdbc:mysql://mysql-recovery:3306/fixflow?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai"

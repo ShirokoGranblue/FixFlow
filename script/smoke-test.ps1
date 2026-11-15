@@ -1,6 +1,10 @@
+param(
+    [string]$BaseUrl = 'http://127.0.0.1:8081'
+)
+
 $ErrorActionPreference = 'Stop'
 
-$baseUrl = 'http://127.0.0.1:8081'
+$baseUrl = $BaseUrl.TrimEnd('/')
 
 # 检查前端
 $frontend = Invoke-WebRequest `
