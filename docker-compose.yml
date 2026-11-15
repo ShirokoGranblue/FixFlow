@@ -22,10 +22,8 @@ services:
       start_period: 40s
 
   backend:
-    image: fixflow-backend:${IMAGE_TAG:-latest}
-    build:
-      context: .
-      dockerfile: DockerFile
+    image: ghcr.io/shirokogranblue/fixflow-backend:${IMAGE_TAG:?missing}
+    
     restart: unless-stopped
 
     environment:
@@ -53,10 +51,7 @@ services:
         condition: service_healthy
 
   frontend:
-    image: fixflow-frontend:${IMAGE_TAG:-latest}
-    build: 
-      dockerfile: DockerFile
-      context: ./frontend
+    image: ghcr.io/shirokogranblue/fixflow-frontend:${IMAGE_TAG:?missing}
 
     restart: unless-stopped
     ports:
