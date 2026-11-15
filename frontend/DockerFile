@@ -5,7 +5,8 @@ WORKDIR /build
 
 COPY package*.json ./
 
-RUN npm ci
+RUN npm ci --include=optional \
+    && node -e "require('lightningcss')"
 
 COPY . .
 

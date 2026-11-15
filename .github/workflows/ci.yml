@@ -114,8 +114,8 @@ jobs:
         shell: pwsh
 
     env:
-      COMPOSE_PROJECT: ${{ vars.LOCAL_COMPOSE_PROJECT }}
-      DEPLOY_ENV_FILE: ${{ vars.LOCAL_ENV_FILE }}
+      COMPOSE_PROJECT: ${{ vars.LOCAL_STAGING_COMPOSE_PROJECT }}
+      DEPLOY_ENV_FILE: ${{ vars.LOCAL_ENV_STAGING_FILE }}
       # 同一提交绑定前后端镜像，便于快速回到上个版本。
       IMAGE_TAG: ${{github.sha}}
 
