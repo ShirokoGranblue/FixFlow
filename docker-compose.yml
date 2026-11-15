@@ -1,7 +1,6 @@
 services:
   mysql:
     image: mysql:8.0
-    container_name: fixflow-mysql
     restart: unless-stopped
 
     environment:
@@ -24,7 +23,6 @@ services:
 
   backend:
     image: fixflow-backend:${IMAGE_TAG:-latest}
-    container_name: fixflow-backend
     build:
       context: .
       dockerfile: DockerFile
@@ -56,15 +54,13 @@ services:
 
   frontend:
     image: fixflow-frontend:${IMAGE_TAG:-latest}
-    container_name: fixflow-frontend
     build: 
       dockerfile: DockerFile
       context: ./frontend
 
     restart: unless-stopped
-
     ports:
-      - "127.0.0.1:8081:80"
+      - "127.0.0.1:${FRONTEND_PORT:-8081}:80"
       
     healthcheck:
       test:
