@@ -65,6 +65,14 @@ jobs:
       - name: Test and package backend
         run: bash ./mvnw -B --no-transfer-progress verify
 
+      - name: Upload backend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-jar
+          path: target/app.jar
+          if-no-files-found: error
+          retention-days: 3
+
   frontend:
     name: Frontend typecheck and build
     runs-on: ubuntu-latest
@@ -90,7 +98,15 @@ jobs:
 
       - name: Typecheck and build frontend
         run: npm run build
-        
+
+      - name: Upload frontend artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+          if-no-files-found: error
+          retention-days: 3
+          
   publish-images:
     name: Publish Docker images
     needs: [backend, frontend]
@@ -162,7 +178,8 @@ jobs:
       COMPOSE_PROJECT: ${{ vars.LOCAL_COMPOSE_PROJECT }}
       DEPLOY_ENV_FILE: ${{ vars.LOCAL_ENV_FILE }}
       # 同一提交绑定前后端镜像，便于快速回到上个版本。
-      IMAGE_TAG: ${{github.sha}}
+      IMAGE_TAG: ${{ github.sha }}
+      SMOKE_BASE_URL: ${{ vars.SMOKE_BASE_URL }}
 
     steps:
       - name: Checkout tested commit
@@ -174,6 +191,10 @@ jobs:
       - name: Check deployment configuration
         run: |
           $ErrorActionPreference = 'Stop'
+
+          if ([string]::IsNullOrWhiteSpace($env:SMOKE_BASE_URL)) {
+              throw '请设置 SMOKE_BASE_URL'
+          }
 
           if ([string]::IsNullOrWhiteSpace($env:COMPOSE_PROJECT)) {
             throw '请设置 LOCAL_COMPOSE_PROJECT'
@@ -202,25 +223,32 @@ jobs:
             throw 'Compose 配置验证失败'
           }
 
+      - name: Login to GHCR
+        env:
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $env:GHCR_TOKEN |
+            docker login ghcr.io `
+              -u "${{ github.actor }}" `
+              --password-stdin
+
+          if ($LASTEXITCODE -ne 0) {
+            throw 'GHCR 登录失败'
+          }
+
       - name: Pull frontend and backend from GHCR
         run: |
+          $composeArgs = @(
+              '--project-name', $env:COMPOSE_PROJECT,
+              '--env-file', $env:DEPLOY_ENV_FILE,
+              '-f', 'docker-compose.yml'
+          )
+
           docker compose @composeArgs pull backend frontend
 
           if ($LASTEXITCODE -ne 0) {
               throw '无法拉取目标版本镜像'
-          }
-
-      - name: Deploy frontend and backend images
-        run: |
-          docker compose @composeArgs `
-            up -d --no-deps --no-build `
-            --pull never `
-            --wait --wait-timeout 180 `
-            backend frontend
-
-          if ($LASTEXITCODE -ne 0) {
-              throw '目标镜像部署失败'
-          }
+          } 
 
       # 确保已有的 MySQL 服务启动，并等待就绪
       - name: Start MySQL and wait until ready
@@ -271,7 +299,7 @@ jobs:
               $previousFrontend = docker inspect `
                   --format '{{.Image}}' $frontendId
 
-              docker image tag "$previousFrontend" "ghcr.io/shirokogranblue/fixflow-backend:$rollbackTag"
+              docker image tag "$previousFrontend" "ghcr.io/shirokogranblue/fixflow-frontend:$rollbackTag"
 
               if ($LASTEXITCODE -ne 0) {
                   throw '读取旧前端镜像失败'
@@ -282,6 +310,7 @@ jobs:
               # 部署新版本
               docker compose @composeArgs `
                   up -d --no-deps --no-build `
+                  --pull never `
                   --wait --wait-timeout 180 `
                   backend frontend
 
@@ -289,8 +318,20 @@ jobs:
                   throw '新版本容器启动失败'
               }
 
+              $address = docker compose @composeArgs port frontend 80
+
+              if ($LASTEXITCODE -ne 0 -or
+                  [string]::IsNullOrWhiteSpace($address)) {
+                  throw '无法获取前端服务地址'
+              }
+
+              $baseUrl = "http://$address"
+
+              & .\script\smoke-test.ps1 -BaseUrl $baseUrl
+
               # 验证实际访问链路
-              & .\script\smoke-test.ps1
+              & .\script\smoke-test.ps1 `
+                  -BaseUrl $env:SMOKE_BASE_URL
 
               if (-not $?) {
                   throw '冒烟测试执行失败'
@@ -310,6 +351,7 @@ jobs:
 
               docker compose @composeArgs `
                   up -d --no-deps --no-build `
+                  --pull never `
                   --wait --wait-timeout 180 `
                   backend frontend
 
@@ -317,22 +359,21 @@ jobs:
                   throw '新版本失败，旧版本回滚也失败'
               }
 
+              $address = docker compose @composeArgs port frontend 80
+
+              if ($LASTEXITCODE -ne 0 -or
+                  [string]::IsNullOrWhiteSpace($address)) {
+                  throw '无法获取前端服务地址'
+              }
+
+              $baseUrl = "http://$address"
+
+              & .\script\smoke-test.ps1 -BaseUrl $baseUrl
+
               # 回滚后再次检查
-              & .\script\smoke-test.ps1
+              & .\script\smoke-test.ps1 `
+                  -BaseUrl $env:SMOKE_BASE_URL
 
               Write-Warning '旧版本已恢复并通过冒烟测试'
               throw '本次新版本发布失败，已完成应用回滚'
-          }
-
-      - name: Login to GHCR
-        env:
-          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          $env:GHCR_TOKEN |
-            docker login ghcr.io `
-              -u "${{ github.actor }}" `
-              --password-stdin
-
-          if ($LASTEXITCODE -ne 0) {
-            throw 'GHCR 登录失败'
           }
