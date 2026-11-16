@@ -22,10 +22,8 @@ services:
       start_period: 40s
 
   backend:
-    image: fixflow-backend:${IMAGE_TAG:-latest}
-    build:
-      context: .
-      dockerfile: DockerFile
+    image: ghcr.io/shirokogranblue/fixflow-backend:${IMAGE_TAG:?missing}
+    
     restart: unless-stopped
 
     environment:
@@ -42,7 +40,7 @@ services:
         - --show-error
         - --max-time
         - "4"
-        - http://127.0.0.1:8080
+        - http://127.0.0.1:8080/actuator/health/readiness
       interval: 5s
       timeout: 5s
       retries: 12
@@ -53,10 +51,7 @@ services:
         condition: service_healthy
 
   frontend:
-    image: fixflow-frontend:${IMAGE_TAG:-latest}
-    build: 
-      dockerfile: DockerFile
-      context: ./frontend
+    image: ghcr.io/shirokogranblue/fixflow-frontend:${IMAGE_TAG:?missing}
 
     restart: unless-stopped
     ports:
