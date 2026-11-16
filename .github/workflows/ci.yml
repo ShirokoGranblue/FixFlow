@@ -142,11 +142,11 @@ jobs:
       # 准备镜像构建目录（image-context是为了避免dockerignore排除CI构建产物，防止镜像打包了|木）
       - name: Prepare build context
         run: |
-          cp Dockerfile.runtime \
-            image-context/backend/Dockerfile
+          cp DockerFile.runtime \
+            image-context/backend/DockerFile
 
-          cp frontend/Dockerfile.runtime \
-            image-context/frontend/Dockerfile
+          cp frontend/DockerFile.runtime \
+            image-context/frontend/DockerFile
 
           cp frontend/default.conf \
             image-context/frontend/default.conf
@@ -168,7 +168,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./image-context/backend
-          file: ./image-context/backend/Dockerfile
+          file: ./image-context/backend/DockerFile
           push: true
           tags: ghcr.io/shirokogranblue/fixflow-backend:${{ github.sha }}
 
@@ -177,7 +177,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: ./image-context/frontend
-          file: ./image-context/frontend/Dockerfile
+          file: ./image-context/frontend/DockerFile
           push: true
           tags: ghcr.io/shirokogranblue/fixflow-frontend:${{ github.sha }}
 
