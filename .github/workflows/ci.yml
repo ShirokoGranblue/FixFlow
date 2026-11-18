@@ -24,11 +24,6 @@ jobs:
     services:
       mysql:
         image: mysql:8.0
-        env:
-          MYSQL_DATABASE: fixflow_test
-          MYSQL_USER: fixflow_test
-          MYSQL_PASSWORD: ${{ secrets.CI_MYSQL_PASSWORD }}
-          MYSQL_ROOT_PASSWORD: ${{ secrets.CI_MYSQL_PASSWORD }}
         ports:
           - 3307:3306
         options: >-
@@ -36,6 +31,24 @@ jobs:
           --health-interval=10s
           --health-timeout=5s
           --health-retries=12
+          
+      redis:
+        image: redis:7-alpine
+        ports: 
+          - 6379:6379      
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 12
+
+        env:
+          MYSQL_DATABASE: fixflow_test
+          MYSQL_USER: fixflow_test
+          MYSQL_PASSWORD: ${{ secrets.CI_MYSQL_PASSWORD }}
+          MYSQL_ROOT_PASSWORD: ${{ secrets.CI_MYSQL_PASSWORD }}
+          SPRING_DATA_REDIS_HOST: 127.0.0.1
+          SPRING_DATA_REDIS_PORT: 6379
 
     env:
       SPRING_PROFILES_ACTIVE: test
