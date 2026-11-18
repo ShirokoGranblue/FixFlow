@@ -39,7 +39,7 @@ public class DashBoardServiceImpl implements DashBoardService {
     public DashBoardVO getDashBoard() {
         String cacheJson = getCacheJson();
 
-		if (!cacheJson.isBlank() && cacheJson!=null) {
+		if (cacheJson!=null && !cacheJson.isBlank()) {
 			try{
 				return jsonMapper.readValue(cacheJson, DashboardCache.TYPE);
 			}catch(JacksonException e){
