@@ -16,6 +16,7 @@ import com.lz.fixflow.entity.*;
 import com.lz.fixflow.enums.TicketAction;
 import com.lz.fixflow.enums.TicketStatus;
 import com.lz.fixflow.enums.UserRole;
+import com.lz.fixflow.event.DashboardChangedEvent;
 import com.lz.fixflow.mapper.*;
 import com.lz.fixflow.service.PermissionService;
 import com.lz.fixflow.service.TicketHistoryService;
@@ -25,12 +26,13 @@ import com.lz.fixflow.vo.TicketDetailVO;
 import com.lz.fixflow.vo.TicketHistoryVO;
 import com.lz.fixflow.vo.TicketVO;
 import lombok.RequiredArgsConstructor;
+
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collector;
 import java.util.stream.Collectors;
 
 @Service
@@ -42,8 +44,11 @@ public class TicketServiceImpl implements TicketService {
     private final UserMapper userMapper;
     private final TicketHistoryMapper ticketHistoryMapper;
     private final CategoryMapper categoryMapper;
+
     private final PermissionService permissionService;
     private final TicketHistoryService ticketHistoryService;
+    
+    private final ApplicationEventPublisher eventPublisher;
 
     private TicketVO convertToVO(Ticket entity,Category category) {
 
@@ -193,6 +198,8 @@ public class TicketServiceImpl implements TicketService {
                 TicketStatus.OPEN.getValue()
         );
 
+        eventPublisher.publishEvent(new DashboardChangedEvent());
+
         return convertToVO(ticket,category);
     }
 
@@ -232,6 +239,7 @@ public class TicketServiceImpl implements TicketService {
         Ticket ticket = ticketMapper.selectById(id);
         Category category = categoryMapper.selectById(ticket.getCategoryId());
 
+        eventPublisher.publishEvent(new DashboardChangedEvent());
         return convertToVO(ticket,category);
     }
 
@@ -270,6 +278,7 @@ public class TicketServiceImpl implements TicketService {
         Ticket ticket = ticketMapper.selectById(id);
         Category category = categoryMapper.selectById(ticket.getCategoryId());
 
+        eventPublisher.publishEvent(new DashboardChangedEvent());
         return convertToVO(ticket,category);
     }
 
@@ -346,6 +355,8 @@ public class TicketServiceImpl implements TicketService {
                 TicketStatus.IN_PROGRESS.getValue()
         );
 
+        eventPublisher.publishEvent(new DashboardChangedEvent());
+
         return convertToVO(ticket,category);
     }
 
@@ -398,6 +409,8 @@ public class TicketServiceImpl implements TicketService {
 
         Category category = categoryMapper.selectById(ticket.getCategoryId());
 
+        eventPublisher.publishEvent(new DashboardChangedEvent());
+
         return convertToVO(ticket,category);
     }
 
@@ -439,6 +452,8 @@ public class TicketServiceImpl implements TicketService {
         
         Ticket ticket = ticketMapper.selectById(id);
         Category category = categoryMapper.selectById(ticket.getCategoryId());
+
+        eventPublisher.publishEvent(new DashboardChangedEvent());
 
         return convertToVO(ticket,category);
     }
@@ -556,8 +571,9 @@ public class TicketServiceImpl implements TicketService {
         );
 
         Ticket ticket = ticketMapper.selectById(id);
-
         Category category = categoryMapper.selectById(ticket.getCategoryId());
+
+        eventPublisher.publishEvent(new DashboardChangedEvent());
 
         return convertToVO(ticket,category);
     }

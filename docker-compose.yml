@@ -31,6 +31,9 @@ services:
       MYSQL_USER: ${MYSQL_USER:?missing}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD:?missing}
 
+      SPRING_DATA_REDIS_HOST: redis
+      SPRING_DATA_REDIS_PORT: 6379
+
     healthcheck:
       test:
         - CMD
@@ -48,6 +51,8 @@ services:
 
     depends_on:
       mysql:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
   frontend:
@@ -74,6 +79,30 @@ services:
 
     depends_on:
       - backend
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+
+    # 当前仅作为缓存，不需要持久化缓存数据
+    command:
+      - redis-server
+      - --save
+      - ""
+      - --appendonly
+      - "no"
+
+    ports:
+      - "127.0.0.1:6379:6379"
+
+    healthcheck:
+      test:
+        - CMD
+        - redis-cli
+        - ping
+      interval: 5s
+      timeout: 3s
+      retries: 10
 
 volumes:
   mysql-data:

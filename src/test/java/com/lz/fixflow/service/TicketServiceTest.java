@@ -12,6 +12,7 @@ import com.lz.fixflow.entity.Ticket;
 import com.lz.fixflow.entity.User;
 import com.lz.fixflow.enums.TicketAction;
 import com.lz.fixflow.enums.TicketStatus;
+import com.lz.fixflow.event.DashboardChangedEvent;
 import com.lz.fixflow.mapper.CategoryMapper;
 import com.lz.fixflow.mapper.TicketCommentMapper;
 import com.lz.fixflow.mapper.TicketHistoryMapper;
@@ -30,13 +31,13 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -60,6 +61,7 @@ class TicketServiceTest {
     @Mock private UserMapper userMapper;
     @Mock private CategoryMapper categoryMapper;
     @Mock private PermissionService permissionService;
+    @Mock private ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     private TicketServiceImpl ticketService;
@@ -143,6 +145,7 @@ class TicketServiceTest {
         assertEquals("网络", result.getCategoryName());
 
         verify(ticketMapper).update(isNull(), any(Wrapper.class));
+        verify(eventPublisher).publishEvent(any(DashboardChangedEvent.class));
         verify(ticketHistoryService).recordHistory(
                 TICKET_ID, STAFF_ID, TicketAction.HANDLE.getValue(),
                 TicketStatus.OPEN.getValue(), TicketStatus.IN_PROGRESS.getValue());
@@ -157,6 +160,7 @@ class TicketServiceTest {
                 () -> ticketService.handleTicket(TICKET_ID));
 
         verify(ticketMapper).update(isNull(), any(Wrapper.class));
+        verifyNoInteractions(eventPublisher);
         verify(ticketMapper, never()).selectById(TICKET_ID);
         verifyNoInteractions(ticketHistoryService, ticketHistoryMapper);
     }

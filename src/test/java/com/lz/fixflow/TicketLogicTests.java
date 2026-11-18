@@ -23,6 +23,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
@@ -33,7 +34,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
-@SuppressWarnings({"unchecked", "rawtypes"})
+@SuppressWarnings({"unchecked"})
 class TicketLogicTests {
 
     private final TicketMapper tickets = mock(TicketMapper.class);
@@ -44,7 +45,7 @@ class TicketLogicTests {
     private final Map<String, User> accounts = new HashMap<>();
     private final PermissionServiceImpl permissions = new PermissionServiceImpl(users);
     private final TicketServiceImpl service = new TicketServiceImpl(
-            tickets, mock(TicketCommentMapper.class),users, histories, categories, permissions,historyService);
+            tickets, mock(TicketCommentMapper.class),users, histories, categories, permissions,historyService,mock(ApplicationEventPublisher.class));
     private final Ticket ticket = new Ticket();
     private StpLogic originalLogic;
     private String actor = "admin";
