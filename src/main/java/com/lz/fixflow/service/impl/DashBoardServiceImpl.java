@@ -1,7 +1,9 @@
 package com.lz.fixflow.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+
 import com.lz.fixflow.annotation.Audit;
+import com.lz.fixflow.cache.CacheTTL;
 import com.lz.fixflow.cache.DashboardCache;
 import com.lz.fixflow.entity.Ticket;
 import com.lz.fixflow.enums.TicketStatus;
@@ -17,10 +19,12 @@ import tools.jackson.databind.json.JsonMapper;
 import org.springframework.dao.DataAccessException;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.concurrent.locks.ReentrantLock;
 
 @Service
 @RequiredArgsConstructor
@@ -32,28 +36,46 @@ public class DashBoardServiceImpl implements DashBoardService {
     
     private final JsonMapper jsonMapper;
     private final StringRedisTemplate redisTemplate;
-    private static final Duration TTL = Duration.ofSeconds(30);
+    private final ReentrantLock rebuildLock = new ReentrantLock();
 
     @Override
     @Audit("管理人员查看了统计数据")
     public DashBoardVO getDashBoard() {
-        String cacheJson = getCacheJson();
+        DashBoardVO cache = readCache();
+        if (cache!=null) {
+            return cache;
+        }
+        
+        rebuildLock.lock();
+        try{
+            cache = readCache();
+            if (cache!=null) {
+                return cache;
+            }
 
-		if (cacheJson!=null && !cacheJson.isBlank()) {
-			try{
-				return jsonMapper.readValue(cacheJson, DashboardCache.TYPE);
-			}catch(JacksonException e){
-				log.warn("Dashboard cache deserialization failed, reload from database");
-				deleteCache(); //防止缓存json格式问题解析失败，导致缓存一直不可用
-			}
-		}
+            log.info("Dashboard cache rebuild");
 
-		DashBoardVO result = loadDateFromDB();
-		saveCache(result);
+            DashBoardVO result = loadDateFromDB();
+            saveCache(result);
 
-        return result;
+            return result;
+        }finally{
+            rebuildLock.unlock();
+        }
     }
 
+    private DashBoardVO readCache(){
+        String cacheJson = getCacheJson();
+        if(!StringUtils.hasText(cacheJson)){
+            return null;
+        }
+        try{
+            return jsonMapper.readValue(cacheJson, DashboardCache.TYPE);
+        }catch(JacksonException e){
+            log.warn("Dashboard cache deserialization failed",e);
+            return null;
+        }
+    }
     private String getCacheJson(){
         try{
             return redisTemplate.opsForValue().get(DashboardCache.KEY);
@@ -65,7 +87,8 @@ public class DashBoardServiceImpl implements DashBoardService {
 	private void saveCache(DashBoardVO dashBoard){
 		try{
 			String value = jsonMapper.writeValueAsString(dashBoard); //对象转换为json格式的String
-			redisTemplate.opsForValue().set(DashboardCache.KEY, value, TTL);
+			redisTemplate.opsForValue()
+                .set(DashboardCache.KEY, value, CacheTTL.randomSeconds(25, 30));
 		}catch(JacksonException | DataAccessException e){
 			log.warn("Failed to save dashboard cache",e);
 		}
