@@ -1,5 +1,6 @@
 package com.lz.fixflow.service.impl;
 
+import com.lz.fixflow.cache.CacheTTL;
 import com.lz.fixflow.cache.CategoryCache;
 import com.lz.fixflow.entity.Category;
 import com.lz.fixflow.mapper.CategoryMapper;
@@ -18,6 +19,7 @@ import org.springframework.util.StringUtils;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.concurrent.locks.ReentrantLock;
 
 @Service
 @RequiredArgsConstructor
@@ -26,9 +28,9 @@ public class CategoryServiceImpl implements CategoryService {
 
     private final CategoryMapper categoryMapper;
 
-    private static final Duration TTL = Duration.ofMinutes(5);
     private final StringRedisTemplate redisTemplate;
     private final JsonMapper jsonMapper;
+    private final ReentrantLock rebuildLock = new ReentrantLock();
 
     private CategoryVO convertToVO(Category entity) {
 
@@ -47,23 +49,39 @@ public class CategoryServiceImpl implements CategoryService {
 
     @Override
     public List<CategoryVO> getCategories(){
-
-        String cachedJson = getCachedJson();
-        if(StringUtils.hasText(cachedJson)){
-            try{
-                return jsonMapper.readValue(cachedJson, CategoryCache.TYPE);
-            }catch(JacksonException e){
-                log.warn("缓存反序列化失败，准备重新加载",e);
-                deleteCache();
-            }
+        List<CategoryVO> cache = readCache();
+        if (cache!=null) {
+            return cache;
         }
-        List<CategoryVO> categories = loadFromDB();
 
-        saveCache(categories);
+        rebuildLock.lock();
+        try{
+            cache = readCache();
+            if (cache!=null) {
+                return cache;
+            }
 
-        return categories;
+            List<CategoryVO> result = loadFromDB();
+            saveCache(result);
+
+            return result;
+        }finally{
+            rebuildLock.unlock();
+        }
     }
 
+    private List<CategoryVO> readCache(){
+        String cacheJson = getCachedJson();
+        if (!StringUtils.hasText(cacheJson)) {
+            return null;
+        }
+        try{
+            return jsonMapper.readValue(cacheJson, CategoryCache.TYPE);
+        }catch(JacksonException e ){
+            log.warn("分类缓存反序列化失败",e);
+            return null;
+        }
+    }
     private String getCachedJson(){
         try{
             return redisTemplate.opsForValue().get(CategoryCache.KEY);
@@ -82,7 +100,8 @@ public class CategoryServiceImpl implements CategoryService {
     private void saveCache(List<CategoryVO> categories){
         try{
             String value = jsonMapper.writeValueAsString(categories);
-            redisTemplate.opsForValue().set(CategoryCache.KEY, value, TTL);
+            redisTemplate.opsForValue()
+                .set(CategoryCache.KEY, value, CacheTTL.randomSeconds(270, 300));
         }catch(JacksonException | DataAccessException e){
             log.warn("缓存写入失败",e);
         }
